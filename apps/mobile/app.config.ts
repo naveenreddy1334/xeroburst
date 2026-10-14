@@ -77,5 +77,5 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     ...(TV ? ([['@react-native-tvos/config-tv', { androidTVBanner: './assets/tv-banner.png', showVerboseWarnings: false }] as [string, any]]) : []),
   ],
   experiments: { typedRoutes: false, reactCompiler: false },
-  extra: { tv: TV },
+  extra: { tv: TV, eas: { projectId: '425e4fd9-9e31-44e5-a201-c6a52eca5e3d' } },
 });
