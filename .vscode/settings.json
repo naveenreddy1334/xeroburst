@@ -1,0 +1,7 @@
+{
+  "typescript.tsdk": "node_modules/typescript/lib",
+  "typescript.enablePromptUseWorkspaceVersion": false,
+  "files.exclude": { "**/node_modules": true, "**/.expo": true },
+  "search.exclude": { "**/node_modules": true, "**/dist": true, "**/.expo": true, "package-lock.json": true },
+  "editor.formatOnSave": false
+}

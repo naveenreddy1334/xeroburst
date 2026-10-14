@@ -1,0 +1,15 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    { "label": "XeroBurst: install", "type": "shell", "command": "npm install", "problemMatcher": [] },
+    { "label": "XeroBurst: first-time setup (create Super Admin)", "type": "shell", "command": "npm run setup", "problemMatcher": [] },
+    { "label": "XeroBurst: add demo data", "type": "shell", "command": "npm run demo-data", "problemMatcher": [] },
+    { "label": "XeroBurst: server", "type": "shell", "command": "npm run server", "isBackground": true, "problemMatcher": [], "presentation": { "panel": "dedicated", "group": "nboard" } },
+    { "label": "XeroBurst: server with practice board", "type": "shell", "command": "npm run server:sim", "isBackground": true, "problemMatcher": [], "presentation": { "panel": "dedicated", "group": "nboard" } },
+    { "label": "XeroBurst: app (Expo)", "type": "shell", "command": "npm run app", "isBackground": true, "problemMatcher": [], "presentation": { "panel": "dedicated", "group": "nboard" } },
+    { "label": "XeroBurst: server + app", "dependsOn": ["XeroBurst: server with practice board", "XeroBurst: app (Expo)"], "dependsOrder": "parallel", "problemMatcher": [] },
+    { "label": "XeroBurst: build web app", "type": "shell", "command": "npm run web:build", "problemMatcher": [] },
+    { "label": "XeroBurst: tests", "type": "shell", "command": "npm test", "problemMatcher": [] },
+    { "label": "XeroBurst: typecheck", "type": "shell", "command": "npm run typecheck", "problemMatcher": [] }
+  ]
+}

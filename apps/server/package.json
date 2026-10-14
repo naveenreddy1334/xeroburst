@@ -1,0 +1,46 @@
+{
+  "name": "@nboard/server",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "nBoard laptop server: Fastify, SQLite, role-based access, board relay",
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "dev:sim": "cross-env BOARD_SIM=1 tsx watch src/index.ts",
+    "start": "tsx src/index.ts",
+    "setup": "tsx src/cli/setup.ts",
+    "reset-password": "tsx src/cli/reset-password.ts",
+    "backup": "tsx src/cli/backup.ts",
+    "demo-data": "tsx src/cli/demo-data.ts",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@types/better-sqlite3": "^9.6.0",
+    "@types/node": "^26.6.4",
+    "@types/qrcode": "^1.5.6",
+    "@types/qrcode-terminal": "^0.12.2",
+    "@types/ws": "^8.18.2",
+    "cross-env": "^10.1.0",
+    "tsx": "^4.23.15",
+    "typescript": "~6.0.3",
+    "vitest": "^5.0.3"
+  },
+  "optionalDependencies": {
+    "serialport": "^13.0.0"
+  },
+  "dependencies": {
+    "@fastify/cors": "^11.3.0",
+    "@fastify/helmet": "^13.1.1",
+    "@fastify/jwt": "^10.2.3",
+    "@fastify/rate-limit": "^11.2.0",
+    "@fastify/static": "^10.1.5",
+    "@fastify/websocket": "^11.3.3",
+    "@nboard/shared": "*",
+    "better-sqlite3": "^13.0.3",
+    "fastify": "^5.12.5",
+    "qrcode": "^1.5.4",
+    "qrcode-terminal": "^0.12.0",
+    "zod": "^4.6.5"
+  }
+}

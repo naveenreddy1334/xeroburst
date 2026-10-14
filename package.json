@@ -1,0 +1,36 @@
+{
+  "name": "nboard",
+  "version": "1.0.0",
+  "private": true,
+  "description": "nBoard: role-based Batak reaction-training platform (server + app)",
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ],
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "setup": "npm run setup -w @nboard/server --",
+    "server": "npm run dev -w @nboard/server",
+    "server:sim": "npm run dev:sim -w @nboard/server",
+    "server:start": "npm run start -w @nboard/server",
+    "demo-data": "npm run demo-data -w @nboard/server --",
+    "backup": "npm run backup -w @nboard/server",
+    "reset-password": "npm run reset-password -w @nboard/server --",
+    "app": "npm run start -w @nboard/mobile",
+    "web": "npm run web -w @nboard/mobile",
+    "web:build": "node scripts/build-web.mjs",
+    "android": "npm run android -w @nboard/mobile",
+    "ios": "npm run ios -w @nboard/mobile",
+    "tv:enable": "node scripts/tv.mjs enable",
+    "tv:disable": "node scripts/tv.mjs disable",
+    "tv:android": "node scripts/tv.mjs android",
+    "test": "npm run test -w @nboard/shared && npm run test -w @nboard/server",
+    "typecheck": "npm run typecheck -w @nboard/shared && npm run typecheck -w @nboard/server && npm run typecheck -w @nboard/mobile"
+  },
+  "overrides": {
+    "react": "19.2.3",
+    "react-dom": "19.2.3"
+  }
+}
