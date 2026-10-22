@@ -81,7 +81,7 @@ function briefing(slug: GameSlug): Briefing {
           { icon: 'flame', title: 'Controls', text: 'Targets keep coming with **no break**. Hit each lit button as it appears.' },
           { icon: 'check', title: 'Scoring', text: 'Each correct hit is **1 point**. The result shows how much you **slowed down** from start to end.' },
           { icon: 'close', title: 'Misses', text: 'A light you did not hit in time, or the wrong button, is a **miss**.' },
-          { icon: 'clock', title: 'Timing', text: `Rounds last **${ENDURANCE_SECONDS[0]} seconds** at level 1 up to **${ENDURANCE_SECONDS[9]} seconds** at level 10. The window shrinks as the round goes on.` },
+          { icon: 'clock', title: 'Timing', text: `Every round lasts **${ENDURANCE_SECONDS[0]} seconds**. The window shrinks as the round goes on, and the light that is on at the end gets a moment to finish.` },
           { icon: 'trendUp', title: 'Levels', text: 'Pick a level to start from. **Finish it and the next level starts by itself.**' },
         ],
       };

@@ -6,7 +6,7 @@
 // Usage: const sim = new BoardSim(); sim.onMessage(handle); sim.receive({ t: 'hello' });
 // A person (or SimBot) calls sim.press(n) to press a button.
 
-import { ENDURANCE_SECONDS } from './games';
+import { ENDURANCE_GRACE_MS, ENDURANCE_SECONDS } from './games';
 import type { GameSlug } from './games';
 import { NBOARD_BUTTONS } from './protocol';
 import type { AppToBoard, BoardToApp } from './protocol';
@@ -283,7 +283,8 @@ export class BoardSim {
       };
     };
 
-    if (hardStopMs) this.after(hardStopMs, () => this.finish(correct));
+    // Endurance: no new light after the time is up, the light that is on finishes, and the round never runs past the grace time.
+    if (hardStopMs) this.after(hardStopMs + (game === 'endure' ? ENDURANCE_GRACE_MS : 0), () => this.finish(correct));
     this.after(game === 'endure' ? 800 : 600, next);
 
     return {

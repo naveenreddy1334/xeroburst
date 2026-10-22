@@ -18,7 +18,13 @@ import { useGet } from '../../../lib/queries';
 import { RequirePermission } from '../../../ui/RequirePermission';
 import { useModule } from '../../../lib/module';
 
-const SUB: Record<string, string> = { quick: 'Pure speed', memory: 'Watch, then repeat', hunt: 'Find the number', endure: 'Hold the pace' };
+const SUB: Record<string, string> = {
+  quick: 'Hit each light the instant it appears.',
+  memory: 'Watch the pattern, then repeat it.',
+  hunt: 'Spot the right number and hit it fast.',
+  endure: 'Hold your pace as the round goes on.',
+};
+const TAG: Record<string, string> = { quick: 'Reflex & speed', memory: 'Memory & focus', hunt: 'Accuracy & scanning', endure: 'Stamina & consistency' };
 
 function Tile({ g, first }: { g: GameDTO; first: boolean }) {
   const router = useRouter();
@@ -29,6 +35,7 @@ function Tile({ g, first }: { g: GameDTO; first: boolean }) {
       testID={`game-${g.slug}`}
       title={info.name}
       sub={SUB[g.slug] ?? info.tagline}
+      tag={TAG[g.slug]}
       colors={POSTER_COLORS[g.slug]!}
       icon={info.icon}
       locked={locked ? 'Locked by coach' : undefined}
@@ -51,7 +58,7 @@ export default function GamesHub() {
         <Header eyebrow="Modules / nBoard" title={modName} subtitle="Choose a game." back="/modules" backLabel="All modules" />
         {q.isLoading ? <LoadingBlock /> : q.error ? <ErrorBlock error={q.error} onRetry={() => void q.refetch()} /> : items.length === 0 ? <EmptyBlock icon="lock" title="No games yet" message="Your coach unlocks games for you." /> : (
           <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: u * 0.875, marginTop: u * 0.25 }}>
-            {items.map((g) => <View key={g.slug} style={{ width: tv ? '24%' : '48.5%', flexGrow: 1 }}><Tile g={g} first={g.slug === firstOpen} /></View>)}
+            {items.map((g) => <View key={g.slug} style={{ width: tv ? '23.5%' : '48.5%', flexGrow: 1 }}><Tile g={g} first={g.slug === firstOpen} /></View>)}
           </View>
         )}
       </Screen>

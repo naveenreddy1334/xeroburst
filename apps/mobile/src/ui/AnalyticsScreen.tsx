@@ -24,12 +24,13 @@ import { Button } from './Button';
 import { Card } from './Card';
 import { Empty, Facts, Pill, RoundChip, SlideTabs, ChipRow, X } from './Bits';
 import { Gauge } from './Gauge';
+import { ProgressPanel } from './ProgressPanel';
 import { GradientFill } from './Gradient';
 import { Icon } from './Icon';
 import { InsightsPanel } from './Insights';
 import { LoadingBlock } from './States';
 
-const TABS = ['Performance', 'Sessions', 'Comparison', 'Insights', 'Profile'];
+const TABS = ['Performance', 'Progress', 'Sessions', 'Comparison', 'Insights', 'Profile'];
 const SOON = ['Mackworth Clock', '2 Back', 'PFTT', 'Stroop Test', '4 Choice Reaction', 'MSIT', 'Colour Shape Task', 'Task Switching'];
 const GAME_ICON: Record<GameSlug, IconName> = { quick: 'bolt', memory: 'memory', hunt: 'ring2', endure: 'flame' };
 const IND = '#B84AFF';
@@ -273,6 +274,7 @@ export function AnalyticsScreen() {
   const perf = useGet<PerformanceResponse>(base ? `${base}/performance` : null);
   const detail = useGet<PlayerDetail>(!isPlayer && pid ? `/players/${pid}` : null);
   const allResults = useGet<Page<SessionDTO>>(base ? `${base}/results` : null, { limit: 12, status: 'played' }, { enabled: tab === 'Sessions' });
+  const progressRes = useGet<Page<SessionDTO>>(base ? `${base}/results` : null, { game, limit: 200, status: 'played', range: 'all' }, { enabled: tab === 'Progress' });
 
   const T = useMemo(() => targetsOf(hitsNow.data?.hits ?? []), [hitsNow.data]);
   const S = useMemo(() => statsOf(T), [T]);
@@ -350,7 +352,7 @@ export function AnalyticsScreen() {
           ['clock', 'Total Time', fmtClock(S.tot), `${S.count} targets`],
           ['target', 'Hits / Misses', `${S.hits} / ${S.miss}`, `${Math.round(S.acc)}% accuracy`],
         ].map(([ic, l, v, sb], i) => (
-          <View key={l} style={tv ? { flex: 1, minWidth: 0 } : { width: i === 4 ? '100%' : '48.7%' }}>
+          <View key={l} style={tv ? { flex: 1, minWidth: 0 } : { flexBasis: i === 4 ? '100%' : '46%', flexGrow: 1, minWidth: 0 }}>
             <StatTile icon={ic as IconName} l={l!} v={v!} sb={sb!} />
           </View>
         ))}
@@ -519,7 +521,7 @@ export function AnalyticsScreen() {
     <View style={{ gap: u * 0.75, minWidth: 0 }}>
       {isPlayer ? null : <PlayerPick visible={pick} players={players} selId={cur?.id ?? null} onPick={setSelId} onClose={() => setPick(false)} />}
       {Header}
-      {tab === 'Performance' ? performance : tab === 'Sessions' ? sessions : tab === 'Comparison' ? comparison : tab === 'Insights' ? (
+      {tab === 'Performance' ? performance : tab === 'Progress' ? <ProgressPanel items={progressRes.data?.items ?? []} gameName={GAMES[game].name} loading={progressRes.isLoading} /> : tab === 'Sessions' ? sessions : tab === 'Comparison' ? comparison : tab === 'Insights' ? (
         <View style={{ gap: u * 0.75 }}>
           <Card pad={0.75} style={{ borderRadius: u * 1.6 }}>
             <View style={{ marginBottom: u * 0.5 }}><X s={0.85} w="b" up>Performance Insights &amp; Improvement Plan</X></View>

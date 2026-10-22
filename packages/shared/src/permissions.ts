@@ -188,7 +188,6 @@ export type MenuId =
   | 'players'
   | 'programs'
   | 'results'
-  | 'leaderboard'
   | 'coaches'
   | 'admins'
   | 'hubs'
@@ -205,7 +204,6 @@ export const MENU_ORDER: MenuId[] = [
   'hubs',
   'programs',
   'results',
-  'leaderboard',
   'audit',
   'system',
   'settings',
@@ -216,6 +214,7 @@ export function menuFor(actor: Actor | null | undefined): MenuId[] {
   return MENU_ORDER.filter((id) => {
     switch (id) {
       case 'dashboard':
+        return isStaff(actor.role); // Analytics is for coaches and above; players have no Analytics
       case 'results':
       case 'settings':
         return true;
@@ -225,8 +224,6 @@ export function menuFor(actor: Actor | null | undefined): MenuId[] {
         return can(actor, 'MANAGE_PLAYERS');
       case 'programs':
         return can(actor, 'MANAGE_PROGRAMS');
-      case 'leaderboard':
-        return can(actor, 'VIEW_RESULTS');
       case 'coaches':
         return can(actor, 'MANAGE_COACHES');
       case 'admins':

@@ -117,24 +117,37 @@ export function SlideTabs({ id, tabs, value, onChange }: { id: string; tabs: str
     Animated.parallel([Animated.spring(x, { toValue: r.x, ...cfg }), Animated.spring(w, { toValue: r.width, ...cfg })]).start();
     lastTab.set(id, value);
   }, [r?.x, r?.width, value]); // eslint-disable-line react-hooks/exhaustive-deps
+  // Every tab must be visible. If they fit on one line (the labels shrink a little when needed) they stay on one line with the
+  // sliding pill. If that would make the text too small (a phone with six tabs), they wrap into rows of three instead.
+  const [avail, setAvail] = useState(0);
+  const chars = tabs.reduce((n, t) => n + t.length, 0);
+  const need = chars * 0.5 * 0.72 * u + tabs.length * 1.75 * u + (tabs.length - 1) * 0.25 * u + 0.5 * u;
+  const fit = avail > 0 ? avail / need : 1;
+  const wrap = fit < 0.8;
+  const k = wrap ? 1 : Math.max(0.8, Math.min(1, fit));
   return (
-    <ScrollView horizontal showsHorizontalScrollIndicator={false} style={[{ flexGrow: 0, maxWidth: '100%', borderRadius: u * 1.25 } as ViewStyle, glassSurface(u)]} contentContainerStyle={{ padding: u * 0.25, gap: u * 0.25 }}>
-      <Animated.View pointerEvents="none" style={[{ position: 'absolute', top: u * 0.25, bottom: u * 0.25, left: x, width: w, opacity: o, borderRadius: u, overflow: 'hidden' }, glowBox(u, 'pill')]}>
-        <GradientFill />
-      </Animated.View>
-      {tabs.map((t) => (
-        <Pressable
-          key={t}
-          accessibilityRole="tab"
-          accessibilityState={{ selected: value === t }}
-          onLayout={(e) => { const l = e.nativeEvent.layout; setRects((p) => (p[t]?.x === l.x && p[t]?.width === l.width ? p : { ...p, [t]: l })); }}
-          onPress={() => onChange(t)}
-          style={{ paddingHorizontal: u * 0.875, paddingVertical: u * 0.5, borderRadius: u }}
-        >
-          <X s={0.72} w="m" c={value === t ? '#fff' : C.idle}>{t}</X>
-        </Pressable>
-      ))}
-    </ScrollView>
+    <View onLayout={(e) => setAvail(Math.round(e.nativeEvent.layout.width))} style={{ width: '100%', alignItems: 'flex-start' }}>
+      <View style={[{ flexDirection: 'row', flexWrap: wrap ? 'wrap' : 'nowrap', maxWidth: '100%', width: wrap ? '100%' : undefined, padding: u * 0.25, gap: u * 0.25, borderRadius: u * 1.25 } as ViewStyle, glassSurface(u)]}>
+        {wrap ? null : (
+          <Animated.View pointerEvents="none" style={[{ position: 'absolute', top: u * 0.25, bottom: u * 0.25, left: x, width: w, opacity: o, borderRadius: u, overflow: 'hidden' }, glowBox(u, 'pill')]}>
+            <GradientFill />
+          </Animated.View>
+        )}
+        {tabs.map((t) => (
+          <Pressable
+            key={t}
+            accessibilityRole="tab"
+            accessibilityState={{ selected: value === t }}
+            onLayout={(e) => { const l = e.nativeEvent.layout; setRects((p) => (p[t]?.x === l.x && p[t]?.width === l.width ? p : { ...p, [t]: l })); }}
+            onPress={() => onChange(t)}
+            style={[{ paddingHorizontal: u * 0.875 * k, paddingVertical: u * 0.5, borderRadius: u, overflow: 'hidden' }, wrap ? { flexBasis: '30%', flexGrow: 1, alignItems: 'center' } : null]}
+          >
+            {wrap && value === t ? <GradientFill /> : null}
+            <X s={0.72 * k} w="m" c={value === t ? '#fff' : C.idle} numberOfLines={1}>{t}</X>
+          </Pressable>
+        ))}
+      </View>
+    </View>
   );
 }
 

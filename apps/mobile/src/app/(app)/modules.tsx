@@ -24,11 +24,11 @@ const BLURB: Record<string, string> = {
   npad: 'Pad work and striking drills. Runs on the shared 10-button games.',
 };
 
-const MOD: Record<string, { sub: string; colors: [string, string]; icon: IconName }> = {
-  nboard: { sub: 'Reaction board: Quick Reaction, Memory Sequence, Target Hunt and Endurance.', colors: ['#7a2bff', '#2a0b6e'], icon: 'bolt' },
-  nbase: { sub: 'Footwork and base training.', colors: ['#3fdcc4', '#0b4f78'], icon: 'flame' },
-  ncourt: { sub: 'Court movement and agility.', colors: ['#12bfd0', '#0a3f8a'], icon: 'target' },
-  npad: { sub: 'Pad work and striking drills.', colors: ['#4a62ff', '#161c72'], icon: 'memory' },
+const MOD: Record<string, { sub: string; tag: string; colors: [string, string]; icon: IconName }> = {
+  nboard: { tag: 'Reflex & focus', sub: 'Four games on the 10-button board: Quick Reaction, Memory Sequence, Target Hunt and Endurance.', colors: ['#7a2bff', '#2a0b6e'], icon: 'bolt' },
+  nbase: { tag: 'Footwork & base', sub: 'Footwork and base training.', colors: ['#3fdcc4', '#0b4f78'], icon: 'flame' },
+  ncourt: { tag: 'Agility & movement', sub: 'Court movement and agility.', colors: ['#12bfd0', '#0a3f8a'], icon: 'target' },
+  npad: { tag: 'Striking & power', sub: 'Pad work and striking drills.', colors: ['#4a62ff', '#161c72'], icon: 'memory' },
 };
 
 function ModulesScreen() {
@@ -44,11 +44,12 @@ function ModulesScreen() {
             const live = m.key === 'nboard';
             const d = MOD[m.key] ?? MOD.nbase!;
             return (
-              <View key={m.key} style={{ width: tv ? '24%' : '48.5%', flexGrow: 1 }}>
+              <View key={m.key} style={{ width: tv ? '23.5%' : '48.5%', flexGrow: 1 }}>
                 <Poster
                   testID={`module-${m.key}`}
                   title={live ? 'nBoard' : m.name}
                   sub={d.sub}
+                  tag={d.tag}
                   colors={d.colors}
                   icon={d.icon}
                   locked={live ? undefined : 'Empty for now'}

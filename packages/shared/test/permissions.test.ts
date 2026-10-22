@@ -72,22 +72,22 @@ describe('rank rules (section 13.1)', () => {
 
 describe('menu by role (section 23)', () => {
   it('Player sees no staff entries', () => {
-    expect(menuFor(pl)).toEqual(['dashboard', 'modules', 'results', 'settings']);
+    expect(menuFor(pl)).toEqual(['modules', 'results', 'settings']);
   });
   it('Coach sees players and programs', () => {
-    expect(menuFor(co)).toEqual(['dashboard', 'modules', 'players', 'programs', 'results', 'leaderboard', 'settings']);
+    expect(menuFor(co)).toEqual(['dashboard', 'modules', 'players', 'programs', 'results', 'settings']);
   });
   it('Admin adds coaches and audit', () => {
-    expect(menuFor(ad)).toEqual(['dashboard', 'modules', 'players', 'coaches', 'hubs', 'programs', 'results', 'leaderboard', 'audit', 'settings']);
+    expect(menuFor(ad)).toEqual(['dashboard', 'modules', 'players', 'coaches', 'hubs', 'programs', 'results', 'audit', 'settings']);
   });
   it('Super Admin sees every menu, including Modules and Programs', () => {
-    expect(menuFor(sa)).toEqual(['dashboard', 'modules', 'players', 'coaches', 'admins', 'hubs', 'programs', 'results', 'leaderboard', 'audit', 'system', 'settings']);
+    expect(menuFor(sa)).toEqual(['dashboard', 'modules', 'players', 'coaches', 'admins', 'hubs', 'programs', 'results', 'audit', 'system', 'settings']);
   });
   it('Admin, Coach and Player menus are unchanged', () => {
-    expect(menuFor(ad)).toEqual(['dashboard', 'modules', 'players', 'coaches', 'hubs', 'programs', 'results', 'leaderboard', 'audit', 'settings']);
+    expect(menuFor(ad)).toEqual(['dashboard', 'modules', 'players', 'coaches', 'hubs', 'programs', 'results', 'audit', 'settings']);
     expect(menuFor(co)).toContain('modules');
     expect(menuFor(co)).toContain('programs');
-    expect(menuFor(pl)).toEqual(['dashboard', 'modules', 'results', 'settings']);
+    expect(menuFor(pl)).toEqual(['modules', 'results', 'settings']);
   });
 });
 

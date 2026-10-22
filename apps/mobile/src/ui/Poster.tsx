@@ -1,5 +1,5 @@
-// Game and module poster: dark glass with one accent colour, a big thin watermark icon top right, the title bottom left
-// and a round play button bottom right (or a pill such as "Empty for now").
+// Game and module poster: dark glass with one accent colour. Everything is centred: icon tile, title, a small tag for what it
+// trains, one line of description, and a round play button (or a pill such as "Empty for now").
 
 import { Pressable, StyleSheet, View } from 'react-native';
 import Svg, { Defs, LinearGradient, Path, RadialGradient, Rect, Stop } from 'react-native-svg';
@@ -23,6 +23,8 @@ export const POSTER_COLORS: Record<string, [string, string]> = {
 interface Props {
   title: string;
   sub: string;
+  /** what it trains, shown as a small pill under the title (e.g. "Reflex & speed") */
+  tag?: string;
   colors: [string, string];
   icon: IconName;
   /** pill instead of the play button, and a dimmed poster */
@@ -32,7 +34,7 @@ interface Props {
   preferredFocus?: boolean;
 }
 
-export function Poster({ title, sub, colors, icon, locked, onPress, testID, preferredFocus }: Props) {
+export function Poster({ title, sub, tag, colors, icon, locked, onPress, testID, preferredFocus }: Props) {
   const { u, tv } = useDevice();
   const { focused, handlers } = useFocus();
   const id = 'p' + useId().replace(/[^a-zA-Z0-9]/g, '');
@@ -42,11 +44,11 @@ export function Poster({ title, sub, colors, icon, locked, onPress, testID, pref
       testID={testID}
       onPress={onPress}
       accessibilityRole="button"
-      accessibilityLabel={`${title}. ${sub}${locked ? '. ' + locked : ''}`}
+      accessibilityLabel={`${title}. ${tag ? tag + '. ' : ''}${sub}${locked ? '. ' + locked : ''}`}
       hasTVPreferredFocus={preferredFocus}
       {...handlers}
       style={({ pressed }) => [
-        { minHeight: u * (tv ? 18 : 14), borderRadius: u * 1.6, overflow: 'hidden', justifyContent: 'flex-end', padding: u, opacity: locked ? 0.55 : 1 },
+        { minHeight: u * (tv ? 18 : 15), borderRadius: u * 1.6, overflow: 'hidden', justifyContent: 'center', alignItems: 'center', padding: u, paddingVertical: u * 1.25, gap: u * 0.5, opacity: locked ? 0.55 : 1 },
         glassSurface(u),
         focused ? { borderWidth: u * 0.2, borderColor: '#FFFFFF', transform: [{ scale: 1.07 }] } : pressed ? { transform: [{ scale: 0.96 }] } : null,
       ]}
@@ -68,19 +70,24 @@ export function Poster({ title, sub, colors, icon, locked, onPress, testID, pref
           <Rect x="0" y="0" width="100%" height="100%" fill={`url(#${id}l)`} />
         </Svg>
       </View>
-      <View pointerEvents="none" style={{ position: 'absolute', left: u * 0.875, top: u * 0.875, width: u * 2.5, height: u * 2.5, borderRadius: u * 0.75, alignItems: 'center', justifyContent: 'center', backgroundColor: alpha(c0, 0.18) }}>
-        <Icon name={icon} size={u * 1.5} color={c0} strokeWidth={1.8} />
+      <View pointerEvents="none" style={{ width: u * 3.6, height: u * 3.6, borderRadius: u * 1.1, alignItems: 'center', justifyContent: 'center', backgroundColor: alpha(c0, 0.18) }}>
+        <Icon name={icon} size={u * 2.2} color={c0} strokeWidth={1.8} />
       </View>
-      <View style={{ paddingRight: u * 3, gap: u * 0.125 }}>
-        <Txt v="h2" size={17.25} numberOfLines={2} style={{ fontFamily: 'Manrope_600SemiBold', letterSpacing: -0.2, lineHeight: u * 1.45 }}>{title}</Txt>
-        <Txt v="small" size={12.75} numberOfLines={3}>{sub}</Txt>
+      <View style={{ alignItems: 'center', gap: u * 0.25 }}>
+        <Txt v="h2" size={17.25} numberOfLines={2} style={{ fontFamily: 'Manrope_600SemiBold', letterSpacing: -0.2, lineHeight: u * 1.45, textAlign: 'center' }}>{title}</Txt>
+        {tag ? (
+          <View style={{ borderRadius: 999, paddingHorizontal: u * 0.7, paddingVertical: u * 0.15, backgroundColor: alpha(c0, 0.16) }}>
+            <Txt v="small" size={11.2} color={c0} style={{ fontFamily: 'Manrope_700Bold', textAlign: 'center' }}>{tag}</Txt>
+          </View>
+        ) : null}
+        <Txt v="small" size={12.75} numberOfLines={3} style={{ textAlign: 'center' }}>{sub}</Txt>
       </View>
       {locked ? (
-        <View style={[{ position: 'absolute', right: u * 0.875, bottom: u * 0.875, borderRadius: 999, paddingHorizontal: u * 0.75, paddingVertical: u * 0.25 }, glassLo()]}>
+        <View style={[{ borderRadius: 999, paddingHorizontal: u * 0.75, paddingVertical: u * 0.25 }, glassLo()]}>
           <Txt v="small" size={11.7} color={C.text} style={{ fontFamily: 'Manrope_600SemiBold' }}>{locked}</Txt>
         </View>
       ) : (
-        <View style={[{ position: 'absolute', right: u * 0.875, bottom: u * 0.875, width: u * 2.5, height: u * 2.5, borderRadius: u * 1.25, alignItems: 'center', justifyContent: 'center' }, glassLo()]}>
+        <View style={[{ width: u * 2.5, height: u * 2.5, borderRadius: u * 1.25, alignItems: 'center', justifyContent: 'center' }, glassLo()]}>
           <Svg width={u} height={u} viewBox="0 0 24 24" style={{ marginLeft: u * 0.125 }}>
             <Path d="M8 5v14l11-7z" fill={C.text} />
           </Svg>

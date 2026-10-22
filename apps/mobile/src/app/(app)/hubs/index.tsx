@@ -15,6 +15,7 @@ import { Header } from '../../../ui/Header';
 import { Card } from '../../../ui/Card';
 import { Button } from '../../../ui/Button';
 import { Field } from '../../../ui/Field';
+import { CityPick } from '../../../ui/CityPick';
 import { CardH, Empty, Pill, Seg, X } from '../../../ui/Bits';
 import { ErrorBlock, LoadingBlock } from '../../../ui/States';
 import { Icon } from '../../../ui/Icon';
@@ -38,7 +39,7 @@ function NewHub({ onDone }: { onDone: () => void }) {
     <Card style={{ marginBottom: u }}>
       <CardH em="name is required">New hub</CardH>
       <Field label="Hub name" required value={name} onChangeText={(t) => { setName(t); setErr({}); }} placeholder="Kredo Center – Bellandur" error={err.name} autoCapitalize="words" maxLength={80} />
-      <Field label="City" value={city} onChangeText={setCity} placeholder="Bengaluru" autoCapitalize="words" maxLength={60} />
+      <CityPick value={city} onChange={setCity} />
       <Button full label="Create hub" loading={act.busy === 'new'} onPress={save} />
     </Card>
   );

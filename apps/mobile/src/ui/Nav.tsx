@@ -173,7 +173,7 @@ export function SideRail() {
 
 // ---- phone bottom bar -------------------------------------------------------------------------------------------
 
-const BAR_PRIORITY: MenuId[] = ['dashboard', 'modules', 'players', 'results', 'leaderboard', 'settings'];
+const BAR_PRIORITY: MenuId[] = ['dashboard', 'modules', 'players', 'results', 'settings'];
 
 export function BottomBar() {
   const menu = useMenu();

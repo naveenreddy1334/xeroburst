@@ -84,8 +84,11 @@ describe('the four games run to the end and produce a summary', () => {
     vi.advanceTimersByTime(60000);
     const end = log.find((m) => m.t === 'end') as Extract<BoardToApp, { t: 'end' }>;
     expect(end).toBeTruthy();
-    expect(end.ms!).toBeGreaterThanOrEqual(29000);
-    expect(end.ms!).toBeLessThan(35000);
+    // Every Endurance round is 45 s: no new light after that, the light on at the end may finish, never later than 45 s + 2 s.
+    expect(end.ms!).toBeGreaterThanOrEqual(44000);
+    expect(end.ms!).toBeLessThanOrEqual(47000);
+    const lateStarts = log.filter((m) => m.t === 'tgt' && (m.ms ?? 0) >= 45000);
+    expect(lateStarts).toHaveLength(0);
     const s = summarize('endure', toRows(log), { duration_ms: end.ms! });
     if (s.game !== 'endure') throw new Error('type');
     expect(s.curve.length).toBeGreaterThan(3);

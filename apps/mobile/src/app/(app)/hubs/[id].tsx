@@ -16,6 +16,7 @@ import { Screen } from '../../../ui/Screen';
 import { Header } from '../../../ui/Header';
 import { Card } from '../../../ui/Card';
 import { Button } from '../../../ui/Button';
+import { CityPick } from '../../../ui/CityPick';
 import { Field } from '../../../ui/Field';
 import { CardH, Empty, Facts, Pill, Seg, X } from '../../../ui/Bits';
 import { ErrorBlock, LoadingBlock } from '../../../ui/States';
@@ -92,7 +93,7 @@ function Edit({ hub, onDone }: { hub: HubDTO; onDone: () => void }) {
     <Card style={{ marginBottom: u }}>
       <CardH>Edit hub</CardH>
       <Field label="Hub name" required value={name} onChangeText={setName} maxLength={80} error={act.fields.name} autoCapitalize="words" />
-      <Field label="City" value={city} onChangeText={setCity} maxLength={60} autoCapitalize="words" />
+      <CityPick value={city} onChange={setCity} />
       <View style={{ flexDirection: 'row', gap: u * 0.5, flexWrap: 'wrap' }}>
         <Button size="sm" label="Save" loading={act.busy === 'save'} onPress={async () => { const r = await act.run('save', () => api.patch(`/hubs/${hub.id}`, { name: name.trim(), city: city.trim() || null }), 'Saved.'); if (r.ok) onDone(); }} />
         <Button size="sm" variant="secondary" label={hub.is_active ? 'Close this hub' : 'Reopen this hub'} loading={act.busy === 'active'} onPress={async () => { const r = await act.run('active', () => api.patch(`/hubs/${hub.id}`, { is_active: !hub.is_active }), hub.is_active ? 'Hub closed.' : 'Hub reopened.'); if (r.ok) onDone(); }} />

@@ -7,7 +7,6 @@ export const MENU: Record<MenuId, { label: string; href: string; icon: IconName 
   players: { label: 'Players', href: '/players', icon: 'players' },
   programs: { label: 'Programs', href: '/programs', icon: 'programs' },
   results: { label: 'Results', href: '/results', icon: 'results' },
-  leaderboard: { label: 'Leaderboard', href: '/leaderboard', icon: 'leaderboard' },
   coaches: { label: 'Coaches', href: '/coaches', icon: 'coaches' },
   hubs: { label: 'Hubs', href: '/hubs', icon: 'hubs' },
   admins: { label: 'Admins', href: '/admins', icon: 'admins' },

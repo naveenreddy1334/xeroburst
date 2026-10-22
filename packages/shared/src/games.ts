@@ -178,5 +178,7 @@ export function isGameSlug(v: unknown): v is GameSlug {
   return typeof v === 'string' && (GAME_SLUGS as readonly string[]).includes(v);
 }
 
-/** Round length for Endurance by level, in seconds (about 30 s at L1-2 up to 120 s at L9-10). */
-export const ENDURANCE_SECONDS = [30, 30, 50, 50, 70, 70, 95, 95, 120, 120];
+/** Every Endurance round lasts 45 seconds, at every level. No new light starts after that. */
+export const ENDURANCE_SECONDS = [45, 45, 45, 45, 45, 45, 45, 45, 45, 45];
+/** A light that is on when the 45 seconds are up gets to finish (hit, miss or time out); the round never runs past 45 s + this. */
+export const ENDURANCE_GRACE_MS = 2000;

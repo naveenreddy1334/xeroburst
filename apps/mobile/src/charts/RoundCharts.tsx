@@ -136,7 +136,7 @@ export function RoundChart({ rows, height, revealKey }: { rows: ChartRow[]; heig
             {Y400.map((v) => <Line key={v} x1={L} x2={R} y1={Y(v)} y2={Y(v)} stroke={C.grid} strokeWidth={1} strokeDasharray="2 4" />)}
             {rows.map((_, i) => <Line key={i} x1={X(i)} x2={X(i)} y1={T} y2={B} stroke={C.grid} strokeWidth={1} strokeDasharray="2 4" />)}
             {Y400.map((v) => <SvgText key={v} x={L - 8} y={Y(v) + 4} fill={C.faint} fontSize={11} fontFamily={F.body} textAnchor="end">{v}</SvgText>)}
-            {rows.map((r, i) => <SvgText key={i} x={X(i)} y={B + 16} fill={C.faint} fontSize={11} fontFamily={F.body} textAnchor="middle">{r.n}</SvgText>)}
+            {rows.map((r, i) => (i % Math.max(1, Math.ceil(22 / Math.max(1, (R - L) / Math.max(1, n - 1)))) === 0 ? <SvgText key={i} x={X(i)} y={B + 16} fill={C.faint} fontSize={11} fontFamily={F.body} textAnchor="middle">{r.n}</SvgText> : null))}
             <SvgText x={(L + R) / 2} y={height - 5} fill={C.sub} fontSize={11} fontFamily={F.body} textAnchor="middle">Target Number</SvgText>
             {n > 1 ? <Path d={monotone(maPts)} stroke="#35C7FF" strokeWidth={2} fill="none" /> : null}
             {rtPts.length > 1 ? <Path d={monotone(rtPts)} stroke="#B84AFF" strokeWidth={2} fill="none" /> : null}
@@ -195,7 +195,7 @@ export function TrendChart({ rows, height, revealKey }: { rows: ChartRow[]; heig
             {rows.map((_, i) => <Line key={i} x1={X(i)} x2={X(i)} y1={T} y2={B} stroke={C.grid} strokeWidth={1} strokeDasharray="2 4" />)}
             {Y400.map((v) => <SvgText key={v} x={L - 8} y={yl(v) + 4} fill={C.faint} fontSize={11} fontFamily={F.body} textAnchor="end">{v}</SvgText>)}
             {[0, 50, 100].map((v) => <SvgText key={v} x={R + 8} y={yr(v) + 4} fill={C.faint} fontSize={11} fontFamily={F.body} textAnchor="start">{v}</SvgText>)}
-            {rows.map((r, i) => <SvgText key={i} x={X(i)} y={B + 16} fill={C.faint} fontSize={11} fontFamily={F.body} textAnchor="middle">{r.n}</SvgText>)}
+            {rows.map((r, i) => (i % Math.max(1, Math.ceil(22 / Math.max(1, (R - L) / Math.max(1, n - 1)))) === 0 ? <SvgText key={i} x={X(i)} y={B + 16} fill={C.faint} fontSize={11} fontFamily={F.body} textAnchor="middle">{r.n}</SvgText> : null))}
             <SvgText x={(L + R) / 2} y={height - 5} fill={C.sub} fontSize={11} fontFamily={F.body} textAnchor="middle">Target Number</SvgText>
             {series.map((s) => {
               const pts = rows.map((r, i) => ({ v: s.get(r), i })).filter((q): q is { v: number; i: number } => q.v !== null).map(({ v, i }) => [X(i), s.y(v)] as [number, number]);
@@ -228,7 +228,9 @@ export function TrendChart({ rows, height, revealKey }: { rows: ChartRow[]; heig
 
 const niceTicks = (max: number): number[] => {
   const top = Math.max(1, max);
-  const step = top <= 5 ? 1 : top <= 10 ? 2 : top <= 25 ? 5 : top <= 50 ? 10 : Math.pow(10, Math.floor(Math.log10(top)));
+  const raw = top / 4;
+  const mag = Math.pow(10, Math.floor(Math.log10(raw)));
+  const step = Math.max(1, [1, 2, 5, 10].map((f) => f * mag).find((v) => v >= raw) ?? mag * 10);
   const out: number[] = [];
   for (let v = 0; v <= Math.ceil(top / step) * step; v += step) out.push(v);
   return out;
@@ -239,8 +241,8 @@ export function HistChart({ bins, height, revealKey }: { bins: { x: number; c: n
   const [hover, setHover] = useState<number | null>(null);
   const id = useId().replace(/[^a-zA-Z0-9]/g, '');
   const t = useReveal(2400, revealKey);
-  const m = { top: 4, right: 2, left: -18, bottom: 14 };
-  const L = m.left + 30;
+  const m = { top: 4, right: 4, left: 0, bottom: 14 };
+  const L = m.left + 36;
   const R = w - m.right;
   const T = m.top;
   const B = height - m.bottom - 30;
@@ -265,7 +267,7 @@ export function HistChart({ bins, height, revealKey }: { bins: { x: number; c: n
           <ClipReveal id={`c${id}`} w={w} h={height} t={t} />
           <G clipPath={`url(#c${id})`}>
             {ticks.map((v) => <Line key={v} x1={L} x2={R} y1={Y(v)} y2={Y(v)} stroke={C.grid} strokeWidth={1} strokeDasharray="2 4" />)}
-            {ticks.map((v) => <SvgText key={v} x={L - 8} y={Y(v) + 4} fill={C.faint} fontSize={11} fontFamily={F.body} textAnchor="end">{v}</SvgText>)}
+            {ticks.map((v) => <SvgText key={v} x={L - 6} y={Y(v) + 4} fill={C.faint} fontSize={11} fontFamily={F.body} textAnchor="end">{v}</SvgText>)}
             {hover !== null ? <Rect x={L + hover * slot} y={T} width={slot} height={B - T} fill={C.grid} /> : null}
             {bins.map((b, i) => {
               const h = (b.c / top) * (B - T);
