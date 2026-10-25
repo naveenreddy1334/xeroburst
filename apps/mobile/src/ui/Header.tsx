@@ -49,7 +49,7 @@ export function Header({ title, subtitle, back, backLabel, right, eyebrow }: Pro
       {!wide ? backBtn : null}
       <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: u }}>
         <View style={{ flex: 1, minWidth: 0 }}>
-          {eyebrow ? <Txt v="small" size={12.75} color="rgba(53,199,255,0.9)" style={{ fontFamily: 'Manrope_500Medium' }}>{eyebrow}</Txt> : null}
+          {eyebrow ? <Txt v="small" size={12.75} color={C.highlight} style={{ fontFamily: 'Manrope_500Medium' }}>{eyebrow}</Txt> : null}
           <Txt v="h1" size={tv ? 36 : 28.5} numberOfLines={2} accessibilityRole="header" style={{ fontFamily: 'Manrope_600SemiBold', letterSpacing: -0.4, marginTop: u * 0.125, lineHeight: u * (tv ? 2.5 : 2) }}>
             {title}
           </Txt>

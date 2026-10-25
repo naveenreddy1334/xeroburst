@@ -7,7 +7,7 @@ import type { LayoutChangeEvent } from 'react-native';
 import { View } from 'react-native';
 import Svg, { Defs, G, Line, LinearGradient, Path, Stop, Text as SvgText } from 'react-native-svg';
 import type { SessionDTO } from '@nboard/shared';
-import { C, F } from '../theme/tokens';
+import { C, F, INK } from '../theme/tokens';
 import { useDevice } from '../theme/device';
 import { Card } from './Card';
 import { Empty, Seg, X } from './Bits';
@@ -106,7 +106,7 @@ function Bars({ data, metric }: { data: Bucket[]; metric: MetricKey }) {
         <Svg width={w} height={height}>
           <Defs>
             <LinearGradient id="pbar" x1="0" y1="0" x2="0" y2="1">
-              <Stop offset="0" stopColor="#B84AFF" />
+              <Stop offset="0" stopColor={INK.line} />
               <Stop offset="1" stopColor="#5b2bd6" />
             </LinearGradient>
             <LinearGradient id="pbarOld" x1="0" y1="0" x2="0" y2="1">

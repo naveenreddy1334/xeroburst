@@ -48,10 +48,10 @@ export function HistoryTable({ playerId, games, accuracy }: { playerId: string; 
       ) : rows.length === 0 ? (
         <Empty>No rounds yet.</Empty>
       ) : (
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} nestedScrollEnabled>
-          <View style={{ minWidth: '100%' }}>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} nestedScrollEnabled contentContainerStyle={{ flexGrow: 1 }}>
+          <View style={{ flexGrow: 1, minWidth: u * (COLS.reduce((n, c) => n + c.w, 0) + COLS.length * 0.5 + 1) }}>
             <View style={{ flexDirection: 'row', gap: u * 0.5, paddingHorizontal: u * 0.5, paddingBottom: u * 0.375 }}>
-              {COLS.map((c) => <X key={c.k} s={0.72} w="b" up c={C.faint} style={{ width: u * c.w, textAlign: c.right ? 'right' : 'left' }}>{c.k}</X>)}
+              {COLS.map((c) => <X key={c.k} s={0.72} w="b" up c={C.faint} style={{ flexGrow: c.w, flexShrink: 0, flexBasis: u * c.w, textAlign: c.right ? 'right' : 'left' }}>{c.k}</X>)}
             </View>
             {rows.map((r, i) => {
               const s = r.summary;
@@ -67,8 +67,8 @@ export function HistoryTable({ playerId, games, accuracy }: { playerId: string; 
               ];
               return (
                 <View key={r.id} style={[{ flexDirection: 'row', alignItems: 'center', gap: u * 0.5, paddingHorizontal: u * 0.5, paddingVertical: u * 0.5, borderRadius: u }, i % 2 ? glassLo() : null]}>
-                  {cells.map((c, j) => <X key={j} s={0.82} w={j === 0 ? 'b' : 'm'} num style={{ width: u * COLS[j]!.w, textAlign: COLS[j]!.right ? 'right' : 'left' }} numberOfLines={1}>{c}</X>)}
-                  <X s={0.8} w="b" c={tone === 'ok' ? C.success : tone === 'warn' ? C.warning : C.danger} style={{ width: u * COLS[7]!.w }} numberOfLines={1}>{label}</X>
+                  {cells.map((c, j) => <X key={j} s={0.82} w={j === 0 ? 'b' : 'm'} num style={{ flexGrow: COLS[j]!.w, flexShrink: 0, flexBasis: u * COLS[j]!.w, textAlign: COLS[j]!.right ? 'right' : 'left' }} numberOfLines={1}>{c}</X>)}
+                  <X s={0.8} w="b" c={tone === 'ok' ? C.success : tone === 'warn' ? C.warning : C.danger} style={{ flexGrow: COLS[7]!.w, flexShrink: 0, flexBasis: u * COLS[7]!.w }} numberOfLines={1}>{label}</X>
                 </View>
               );
             })}

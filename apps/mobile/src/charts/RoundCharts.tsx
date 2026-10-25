@@ -5,7 +5,7 @@ import { useId, useState } from 'react';
 import { View } from 'react-native';
 import type { LayoutChangeEvent } from 'react-native';
 import Svg, { Circle, ClipPath, Defs, G, Line, LinearGradient, Path, Rect, Stop, Text as SvgText } from 'react-native-svg';
-import { C, F } from '../theme/tokens';
+import { C, F, INK } from '../theme/tokens';
 import { glassSurface } from '../theme/surfaces';
 import { useDevice } from '../theme/device';
 import { useReveal } from '../ui/motion';
@@ -100,7 +100,7 @@ function TipRow({ k, v, color, bad }: { k: string; v: string; color?: string; ba
   return (
     <View style={{ flexDirection: 'row', justifyContent: 'space-between', gap: 14 }}>
       <Txt size={11.1} color={color ?? C.sub}>{k}</Txt>
-      <Txt v="bodyStrong" size={11.1} color={bad ? '#FF4778' : color ?? C.text} style={{ fontVariant: ['tabular-nums'] }}>{v}</Txt>
+      <Txt v="bodyStrong" size={11.1} color={bad ? '#FF5263' : color ?? C.text} style={{ fontVariant: ['tabular-nums'] }}>{v}</Txt>
     </View>
   );
 }
@@ -138,14 +138,14 @@ export function RoundChart({ rows, height, revealKey }: { rows: ChartRow[]; heig
             {Y400.map((v) => <SvgText key={v} x={L - 8} y={Y(v) + 4} fill={C.faint} fontSize={11} fontFamily={F.body} textAnchor="end">{v}</SvgText>)}
             {rows.map((r, i) => (i % Math.max(1, Math.ceil(22 / Math.max(1, (R - L) / Math.max(1, n - 1)))) === 0 ? <SvgText key={i} x={X(i)} y={B + 16} fill={C.faint} fontSize={11} fontFamily={F.body} textAnchor="middle">{r.n}</SvgText> : null))}
             <SvgText x={(L + R) / 2} y={height - 5} fill={C.sub} fontSize={11} fontFamily={F.body} textAnchor="middle">Target Number</SvgText>
-            {n > 1 ? <Path d={monotone(maPts)} stroke="#35C7FF" strokeWidth={2} fill="none" /> : null}
-            {rtPts.length > 1 ? <Path d={monotone(rtPts)} stroke="#B84AFF" strokeWidth={2} fill="none" /> : null}
-            {rtPts.map(([x, y], i) => <Circle key={i} cx={x} cy={y} r={3.5} fill="#B84AFF" stroke="#B84AFF" />)}
+            {n > 1 ? <Path d={monotone(maPts)} stroke={INK.line2} strokeWidth={2} fill="none" /> : null}
+            {rtPts.length > 1 ? <Path d={monotone(rtPts)} stroke={INK.line} strokeWidth={2} fill="none" /> : null}
+            {rtPts.map(([x, y], i) => <Circle key={i} cx={x} cy={y} r={3.5} fill={INK.line} stroke={INK.line} />)}
           </G>
           {hover !== null && hv ? (
             <>
-              <Line x1={X(hover)} x2={X(hover)} y1={T} y2={B} stroke="#B84AFF" strokeWidth={1} strokeDasharray="3 3" />
-              {hv.rt !== null ? <Circle cx={X(hover)} cy={Y(hv.rt)} r={5} fill="#fff" stroke="#B84AFF" strokeWidth={1} /> : null}
+              <Line x1={X(hover)} x2={X(hover)} y1={T} y2={B} stroke={INK.line} strokeWidth={1} strokeDasharray="3 3" />
+              {hv.rt !== null ? <Circle cx={X(hover)} cy={Y(hv.rt)} r={5} fill="#fff" stroke={INK.line} strokeWidth={1} /> : null}
             </>
           ) : null}
         </Svg>
@@ -179,9 +179,9 @@ export function TrendChart({ rows, height, revealKey }: { rows: ChartRow[]; heig
   const yr = (v: number) => B - (Math.min(100, Math.max(0, v)) / 100) * (B - T);
   const ys = (v: number) => B - (Math.min(6, Math.max(0, v)) / 6) * (B - T);
   const series = [
-    { name: 'Reaction Time (ms)', stroke: '#B84AFF', fill: 'rgba(148,0,211,.22)', y: yl, get: (r: ChartRow) => r.rt, fmt: (v: number) => String(v) },
-    { name: 'Accuracy (%)', stroke: '#35C7FF', fill: 'rgba(53,199,255,.10)', y: yr, get: (r: ChartRow) => r.acc, fmt: (v: number) => String(v) },
-    { name: 'Speed (targets/s)', stroke: '#FF4778', fill: 'rgba(255,71,120,.08)', y: ys, get: (r: ChartRow) => r.sp, fmt: (v: number) => String(v) },
+    { name: 'Reaction Time (ms)', stroke: INK.line, fill: INK.fill, y: yl, get: (r: ChartRow) => r.rt, fmt: (v: number) => String(v) },
+    { name: 'Accuracy (%)', stroke: INK.line2, fill: INK.fill2, y: yr, get: (r: ChartRow) => r.acc, fmt: (v: number) => String(v) },
+    { name: 'Speed (targets/s)', stroke: '#FF5263', fill: 'rgba(255,82,99,.08)', y: ys, get: (r: ChartRow) => r.sp, fmt: (v: number) => String(v) },
   ];
   const idxAt = (x: number) => Math.max(0, Math.min(n - 1, Math.round(((x - L) / Math.max(1, R - L)) * (n - 1))));
   const hv = hover !== null ? rows[hover] : undefined;
@@ -210,7 +210,7 @@ export function TrendChart({ rows, height, revealKey }: { rows: ChartRow[]; heig
               );
             })}
           </G>
-          {hover !== null ? <Line x1={X(hover)} x2={X(hover)} y1={T} y2={B} stroke="#B84AFF" strokeWidth={1} strokeDasharray="3 3" /> : null}
+          {hover !== null ? <Line x1={X(hover)} x2={X(hover)} y1={T} y2={B} stroke={INK.line} strokeWidth={1} strokeDasharray="3 3" /> : null}
         </Svg>
       ) : null}
       {hover !== null && hv ? (
@@ -337,13 +337,13 @@ export function WeekChart({ labels, series, height, revealKey }: { labels: strin
             <Defs>
               <ClipPath id={`wc${id}`}><Rect x={0} y={0} width={Math.max(0, w * t)} height={height} /></ClipPath>
               <LinearGradient id={`wa${id}`} x1="0" y1="0" x2="0" y2="1">
-                <Stop offset="0" stopColor="#35C7FF" stopOpacity={0.22} />
+                <Stop offset="0" stopColor={INK.line2} stopOpacity={0.22} />
                 <Stop offset="0.65" stopColor="#5594ff" stopOpacity={0.06} />
                 <Stop offset="1" stopColor="#5594ff" stopOpacity={0} />
               </LinearGradient>
               <LinearGradient id={`wl${id}`} x1="0" y1="0" x2="1" y2="0">
                 <Stop offset="0" stopColor="#8af2fb" />
-                <Stop offset="1" stopColor="#35C7FF" />
+                <Stop offset="1" stopColor={INK.line2} />
               </LinearGradient>
             </Defs>
             <G clipPath={`url(#wc${id})`}>

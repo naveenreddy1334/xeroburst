@@ -46,8 +46,8 @@ export function Select({ value, onChange, options, label, w, h, disabled }: { va
                 return (
                   <Pressable key={o.value} accessibilityRole="button" accessibilityState={{ selected: on }} onPress={() => { setOpen(false); onChange(o.value); }} style={{ borderRadius: u, overflow: 'hidden', paddingHorizontal: u * 0.75, paddingVertical: u * 0.625, flexDirection: 'row', alignItems: 'center' }}>
                     {on ? <GradientFill /> : null}
-                    <X s={0.95} w={on ? 'b' : 'm'} c={on ? '#fff' : C.text} style={{ flex: 1 }}>{o.label}</X>
-                    {on ? <Icon name="check" size={u} color="#fff" /> : null}
+                    <X s={0.95} w={on ? 'b' : 'm'} c={on ? '#000' : C.text} style={{ flex: 1 }}>{o.label}</X>
+                    {on ? <Icon name="check" size={u} color="#000" /> : null}
                   </Pressable>
                 );
               })}

@@ -24,7 +24,7 @@ export function X({ s = 1, w = 'm', c, up, num, style, children, ...rest }: { s?
 
 export function Pill({ t = '', children }: { t?: 'good' | 'off' | 'warn' | ''; children: React.ReactNode }) {
   const { u } = useDevice();
-  const bg = t === 'good' ? 'rgba(39,229,181,.12)' : t === 'off' ? C.tint : t === 'warn' ? 'rgba(255,180,84,.12)' : C.tint;
+  const bg = t === 'good' ? 'rgba(155,251,0,.12)' : t === 'off' ? C.tint : t === 'warn' ? 'rgba(255,189,89,.12)' : C.tint;
   const fg = t === 'good' ? C.success : t === 'off' ? C.faint : t === 'warn' ? C.warning : C.text;
   return (
     <View style={{ alignSelf: 'flex-start', paddingHorizontal: u * 0.75, paddingVertical: u * 0.25, borderRadius: 999, backgroundColor: bg }}>
@@ -79,15 +79,17 @@ export function RoundChip({ label, on, onPress, icon, lead }: { label: string; o
       {on ? <GradientFill /> : null}
       {lead}
       {icon}
-      <X s={0.85} w="b" c={on ? '#fff' : C.idle} style={{ whiteSpace: 'nowrap' } as TextStyle}>{label}</X>
+      <X s={0.85} w="b" c={on ? '#000' : C.idle} style={{ whiteSpace: 'nowrap' } as TextStyle}>{label}</X>
     </Pressable>
   );
 }
 
 export function ChipRow({ children }: { children: React.ReactNode }) {
-  const { u } = useDevice();
+  const { u, wide } = useDevice();
+  // On wide screens the chips simply wrap: a scrolling box would clip the glow and shadows of the chips into a visible rectangle.
+  if (wide) return <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: u * 0.5, padding: u * 0.375 }}>{children}</View>;
   return (
-    <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: u * 0.5, padding: u * 0.375 }} style={{ flexGrow: 0 }}>
+    <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: u * 0.5, paddingHorizontal: u * 1.375, paddingVertical: u * 1.1 }} style={{ flexGrow: 0, marginHorizontal: -u, marginVertical: -u * 0.725, overflow: 'visible' }}>
       {children}
     </ScrollView>
   );
@@ -143,7 +145,7 @@ export function SlideTabs({ id, tabs, value, onChange }: { id: string; tabs: str
             style={[{ paddingHorizontal: u * 0.875 * k, paddingVertical: u * 0.5, borderRadius: u, overflow: 'hidden' }, wrap ? { flexBasis: '30%', flexGrow: 1, alignItems: 'center' } : null]}
           >
             {wrap && value === t ? <GradientFill /> : null}
-            <X s={0.72 * k} w="m" c={value === t ? '#fff' : C.idle} numberOfLines={1}>{t}</X>
+            <X s={0.72 * k} w="m" c={value === t ? '#000' : C.idle} numberOfLines={1}>{t}</X>
           </Pressable>
         ))}
       </View>
@@ -170,8 +172,8 @@ export function Seg<T extends string | number>({ items, value, onChange }: { ite
       {items.map(([k, l]) => {
         const on = value === k;
         return (
-          <Pressable key={String(k)} accessibilityRole="button" accessibilityState={{ selected: on }} onPress={() => onChange(k)} style={[{ minHeight: u * 2.25, minWidth: u * 3, paddingHorizontal: u, borderRadius: u * 0.5, alignItems: 'center', justifyContent: 'center' }, on ? ({ backgroundColor: C.tintHi, boxShadow: 'inset 0 1px 0 rgba(255,255,255,.12), inset 0 0 0 1px rgba(53,199,255,.25)' } as never) : null]}>
-            <X s={0.85} w="b" c={on ? '#e4e7ff' : C.sub} style={{ whiteSpace: 'nowrap' } as TextStyle}>{l}</X>
+          <Pressable key={String(k)} accessibilityRole="button" accessibilityState={{ selected: on }} onPress={() => onChange(k)} style={[{ minHeight: u * 2.25, minWidth: u * 3, paddingHorizontal: u, borderRadius: u * 0.5, alignItems: 'center', justifyContent: 'center' }, on ? ({ backgroundColor: C.tintHi, boxShadow: 'inset 0 1px 0 rgba(255,255,255,.12), inset 0 0 0 1px rgba(155,251,0,.25)' } as never) : null]}>
+            <X s={0.85} w="b" c={on ? '#F3FAE6' : C.sub} style={{ whiteSpace: 'nowrap' } as TextStyle}>{l}</X>
           </Pressable>
         );
       })}

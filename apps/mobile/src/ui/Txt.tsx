@@ -1,4 +1,4 @@
-import { Text as RNText } from 'react-native';
+import { StyleSheet, Text as RNText } from 'react-native';
 import type { TextProps, TextStyle, StyleProp } from 'react-native';
 import { C, F } from '../theme/tokens';
 import { useDevice } from '../theme/device';
@@ -30,16 +30,17 @@ export function Txt({ v = 'body', color, align, size, style, ...rest }: Props) {
   const { ui } = useDevice();
   const b = base()[v];
   const fs = (size ?? (b.fontSize as number)) * ui;
-  return (
-    <RNText
-      {...rest}
-      style={[
-        b,
-        { fontSize: fs, lineHeight: Math.round(((b.lineHeight as number) / (b.fontSize as number)) * fs) },
-        color ? { color } : null,
-        align ? { textAlign: align } : null,
-        style,
-      ]}
-    />
-  );
+  const merged = StyleSheet.flatten([
+    b,
+    { fontSize: fs, lineHeight: Math.round(((b.lineHeight as number) / (b.fontSize as number)) * fs) },
+    color ? { color } : null,
+    align ? { textAlign: align } : null,
+    style,
+  ]) as TextStyle;
+  // Manrope has long descenders (g, y, p). A line box shorter than 1.3 times the font size cuts them off,
+  // most visibly on one-line titles, so the line height never goes below that.
+  const size2 = (merged.fontSize as number) ?? fs;
+  const minLine = Math.ceil(size2 * 1.3);
+  if (typeof merged.lineHeight !== 'number' || merged.lineHeight < minLine) merged.lineHeight = minLine;
+  return <RNText {...rest} style={merged} />;
 }

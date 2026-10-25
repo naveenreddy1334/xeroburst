@@ -67,7 +67,7 @@ export function Field({
   const { focused, handlers } = useFocus();
   const [reveal, setReveal] = useState(false);
   const [kb, setKb] = useState(false);
-  const ring = error ? `0 0 0 ${u * 0.13}px rgba(255,122,138,.8)` : focused ? (tv ? `0 0 0 ${u * 0.18}px #fff` : `0 0 0 ${u * 0.13}px rgba(108,140,255,.7)`) : undefined;
+  const ring = error ? `0 0 0 ${u * 0.13}px rgba(255,122,138,.8)` : focused ? (tv ? `0 0 0 ${u * 0.18}px #fff` : `0 0 0 ${u * 0.13}px rgba(155,251,0,.7)`) : undefined;
   const box = {
     minHeight: u * 3.2,
     borderRadius: u,

@@ -32,8 +32,8 @@ export function GlassLight() {
       <Svg width="100%" height="100%" preserveAspectRatio="none">
         <Defs>
           <RadialGradient id="gl" cx="14%" cy="-12%" rx="110%" ry="60%" fx="14%" fy="-12%">
-            <Stop offset="0" stopColor="rgb(200,210,255)" stopOpacity={0.09} />
-            <Stop offset="0.58" stopColor="rgb(200,210,255)" stopOpacity={0} />
+            <Stop offset="0" stopColor="rgb(230,255,160)" stopOpacity={0.09} />
+            <Stop offset="0.58" stopColor="rgb(230,255,160)" stopOpacity={0} />
           </RadialGradient>
         </Defs>
         <Rect x="0" y="0" width="100%" height="100%" fill="url(#gl)" />

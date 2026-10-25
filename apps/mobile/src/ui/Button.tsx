@@ -35,7 +35,7 @@ export function Button({ label, onPress, variant = 'primary', icon, iconRight, l
   const { focused, handlers } = useFocus();
   const off = disabled || loading;
   const accent = color ?? C.primary;
-  const fg = variant === 'primary' ? '#FFFFFF' : variant === 'accent' ? onColor(accent) : variant === 'danger' ? '#FF4778' : C.text;
+  const fg = variant === 'primary' ? '#000000' : variant === 'accent' ? onColor(accent) : variant === 'danger' ? '#FF5263' : C.text;
   const minH = Math.max(40, u * (size === 'sm' ? 2.5 : size === 'lg' ? 3.4 : 3));
   const filled = variant === 'primary' || variant === 'accent';
   return (
@@ -64,7 +64,7 @@ export function Button({ label, onPress, variant = 'primary', icon, iconRight, l
         variant === 'primary' ? glowBox(u, 'btn') : null,
         variant === 'secondary' ? neoSurface(u) : null,
         variant === 'ghost' ? { backgroundColor: C.tintHi } : null,
-        variant === 'danger' ? { backgroundColor: alpha('#FF4778', 0.1), borderColor: focused ? '#FFFFFF' : alpha('#EF5A77', 0.25), borderWidth: focused ? u * 0.18 : 1 } : null,
+        variant === 'danger' ? { backgroundColor: alpha('#FF5263', 0.1), borderColor: focused ? '#FFFFFF' : alpha('#EF5A77', 0.25), borderWidth: focused ? u * 0.18 : 1 } : null,
         style,
       ]}
     >

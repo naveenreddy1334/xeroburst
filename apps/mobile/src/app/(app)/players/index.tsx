@@ -3,12 +3,12 @@
 // round history as a table, and "Mark inactive" with a reason.
 
 import { useEffect, useMemo, useState } from 'react';
-import { Pressable, TextInput, View } from 'react-native';
+import { Pressable, TextInput, View, useWindowDimensions } from 'react-native';
 import Svg, { Defs, LinearGradient, Rect, Stop } from 'react-native-svg';
 import { useRouter } from 'expo-router';
 import { GAMES, GAME_SLUGS } from '@nboard/shared';
 import type { AccessItem, CreatedPlayerResponse, HubDTO, Page, PerformanceResponse, PlayerDetail, PlayerListItem, ProgramDTO, ResetPlayerResponse, UserDTO } from '@nboard/shared';
-import { C } from '../../../theme/tokens';
+import { C, INK } from '../../../theme/tokens';
 import { glassLo, neoIn } from '../../../theme/surfaces';
 import { useDevice } from '../../../theme/device';
 import { api } from '../../../lib/api';
@@ -40,15 +40,15 @@ import { useAction } from '../../../staff/players-common';
 const ROLE: Record<string, string> = { SUPER_ADMIN: 'Super Admin', ADMIN: 'Admin', COACH: 'Coach', PLAYER: 'Player' };
 const WEEK = 7 * 86_400_000;
 
-/** from-[#9400D3]/30 to-[#315BFF]/20, left to right. */
+/** from-[#9BFB00]/30 to-[#4A7900]/20, left to right. */
 function SoftSelected() {
   return (
     <View pointerEvents="none" style={{ position: 'absolute', left: 0, right: 0, top: 0, bottom: 0 }}>
       <Svg width="100%" height="100%" preserveAspectRatio="none">
         <Defs>
           <LinearGradient id="ps" x1="0" y1="0" x2="1" y2="0">
-            <Stop offset="0" stopColor="#9400D3" stopOpacity={0.3} />
-            <Stop offset="1" stopColor="#315BFF" stopOpacity={0.2} />
+            <Stop offset="0" stopColor={INK.line} stopOpacity={0.3} />
+            <Stop offset="1" stopColor="#4A7900" stopOpacity={0.2} />
           </LinearGradient>
         </Defs>
         <Rect x="0" y="0" width="100%" height="100%" fill="url(#ps)" />
@@ -71,10 +71,10 @@ function weekly(perf: PerformanceResponse | undefined): { labels: string[]; seri
   }
   const used = buckets.map((b, i) => ({ b, i })).filter((x) => x.b.length);
   const mk = (rows: typeof t[]): WeekSeries[] => [
-    { name: 'Avg reaction (ms)', color: '#35C7FF', axis: 0, data: rows.map((b) => { const m = mean(b.filter((p) => p.avg_rt !== null).map((p) => p.avg_rt as number)); return m === null ? null : Math.round(m); }) },
-    { name: 'Fastest (ms)', color: '#B84AFF', axis: 0, data: rows.map((b) => { const v = b.filter((p) => p.best_rt !== null).map((p) => p.best_rt as number); return v.length ? Math.min(...v) : null; }) },
-    { name: 'Accuracy (%)', color: '#6c8cff', axis: 1, data: rows.map((b) => { const m = mean(b.map((p) => p.accuracy)); return m === null ? null : Math.round(m * 10) / 10; }) },
-    { name: 'Misses', color: '#FF4778', axis: 2, dash: true, data: rows.map((b) => { const m = mean(b.map((p) => p.misses)); return m === null ? null : Math.round(m); }) },
+    { name: 'Avg reaction (ms)', color: INK.line2, axis: 0, data: rows.map((b) => { const m = mean(b.filter((p) => p.avg_rt !== null).map((p) => p.avg_rt as number)); return m === null ? null : Math.round(m); }) },
+    { name: 'Fastest (ms)', color: INK.line, axis: 0, data: rows.map((b) => { const v = b.filter((p) => p.best_rt !== null).map((p) => p.best_rt as number); return v.length ? Math.min(...v) : null; }) },
+    { name: 'Accuracy (%)', color: '#FFBD59', axis: 1, data: rows.map((b) => { const m = mean(b.map((p) => p.accuracy)); return m === null ? null : Math.round(m * 10) / 10; }) },
+    { name: 'Misses', color: '#FF5263', axis: 2, dash: true, data: rows.map((b) => { const m = mean(b.map((p) => p.misses)); return m === null ? null : Math.round(m); }) },
   ];
   if (used.length >= 2) return { labels: used.map((x) => 'W' + (x.i + 1)), series: mk(used.map((x) => x.b)), em: '8 weeks' };
   const last = t.slice(-12);
@@ -158,7 +158,10 @@ function NewPlayerCard({ onCreated }: { onCreated: (id: string) => void }) {
 }
 
 function Roster({ list, total, sel, setSel }: { list: PlayerListItem[]; total: number; sel: string | null; setSel: (id: string) => void }) {
-  const { u } = useDevice();
+  const { u, wide } = useDevice();
+  const { width } = useWindowDimensions();
+  // On big screens the roster is two players across, so it does not stand as one long thin column.
+  const two = wide && width >= 1400;
   const q = useSearch((s) => s.q);
   const setQ = useSearch((s) => s.set);
   return (
@@ -167,11 +170,11 @@ function Roster({ list, total, sel, setSel }: { list: PlayerListItem[]; total: n
       <View style={[{ flexDirection: 'row', alignItems: 'center', minHeight: u * 3.2, borderRadius: u, paddingHorizontal: u, gap: u * 0.5 }, glassLo(), neoIn(u)]}>
         <TextInput value={q} onChangeText={setQ} placeholder="Search all players by name or NB-code" placeholderTextColor={C.faint} accessibilityLabel="Search players" style={{ flex: 1, minWidth: 0, color: C.text, fontFamily: 'Manrope_600SemiBold', fontSize: u, padding: 0, outlineStyle: 'none' } as never} />
       </View>
-      <View style={{ marginTop: u * 0.75, gap: u * 0.5 }}>
+      <View style={{ marginTop: u * 0.75, gap: u * 0.5, flexDirection: 'row', flexWrap: 'wrap' }}>
         {list.length ? list.map((x) => {
           const on = x.id === sel;
           return (
-            <Pressable key={x.id} onPress={() => setSel(x.id)} accessibilityRole="button" accessibilityState={{ selected: on }} style={[{ flexDirection: 'row', alignItems: 'center', gap: u * 0.75, borderRadius: u * 1.25, paddingHorizontal: u, paddingVertical: u * 0.75, overflow: 'hidden', opacity: x.status === 'inactive' ? 0.55 : 1 }, on ? null : glassLo()]}>
+            <Pressable key={x.id} onPress={() => setSel(x.id)} accessibilityRole="button" accessibilityState={{ selected: on }} style={[{ flexDirection: 'row', alignItems: 'center', gap: u * 0.75, borderRadius: u * 1.25, paddingHorizontal: u, paddingVertical: u * 0.75, overflow: 'hidden', opacity: x.status === 'inactive' ? 0.55 : 1, width: two ? '49%' : '100%', flexGrow: two ? 1 : 0 }, on ? null : glassLo()]}>
               {on ? <SoftSelected /> : null}
               <Avatar name={x.display_name} size={u * 2.75} fs={0.85 * 15} photoKey={x.player_code} />
               <View style={{ flex: 1, minWidth: 0 }}>
@@ -181,7 +184,7 @@ function Roster({ list, total, sel, setSel }: { list: PlayerListItem[]; total: n
               <X s={1} w="b" num>{x.perf.accuracy === null ? '--' : `${Math.round(x.perf.accuracy * 10) / 10}%`}</X>
             </Pressable>
           );
-        }) : <Empty>No players match.</Empty>}
+        }) : <View style={{ width: '100%' }}><Empty>No players match.</Empty></View>}
       </View>
     </Card>
   );
@@ -219,7 +222,7 @@ function Training({ p, perm }: { p: PlayerDetail; perm: { access: boolean; progr
           return (
             <View key={a.game} style={[{ flexDirection: 'row', alignItems: 'center', gap: u * 0.75, borderRadius: u * 1.25, paddingHorizontal: u, paddingVertical: u * 0.625 }, glassLo()]}>
               <X s={1} w="b" style={{ flex: 1 }} numberOfLines={1}>{info.name}</X>
-              <Pressable accessibilityRole="button" accessibilityLabel={`${info.name} ${open ? 'open' : 'locked'}`} disabled={!perm.access && !perm.progress} onPress={() => void act.run('acc' + a.game, () => api.put(`/players/${p.id}/access/${a.game}`, { state: open ? 'locked' : 'unlocked' }), open ? `${info.name} locked` : `${info.name} unlocked`)} style={{ borderRadius: 999, paddingHorizontal: u * 0.75, paddingVertical: u * 0.25, backgroundColor: open ? 'rgba(39,229,181,.12)' : C.tint }}>
+              <Pressable accessibilityRole="button" accessibilityLabel={`${info.name} ${open ? 'open' : 'locked'}`} disabled={!perm.access && !perm.progress} onPress={() => void act.run('acc' + a.game, () => api.put(`/players/${p.id}/access/${a.game}`, { state: open ? 'locked' : 'unlocked' }), open ? `${info.name} locked` : `${info.name} unlocked`)} style={{ borderRadius: 999, paddingHorizontal: u * 0.75, paddingVertical: u * 0.25, backgroundColor: open ? 'rgba(155,251,0,.12)' : C.tint }}>
                 <X s={0.72} w="b" c={open ? C.success : C.faint}>{open ? 'Open' : 'Locked'}</X>
               </Pressable>
               <Select label={`Level cap ${info.name}`} w={u * 5.4} h={u * 2.5} value={String(cap)} options={lv} disabled={!perm.access} onChange={(v) => void act.run('cap' + a.game, () => api.put(`/players/${p.id}/access/${a.game}`, { level_cap: +v >= info.maxLevel ? null : +v }), 'Level cap saved.')} />
@@ -293,6 +296,7 @@ function PlayersScreen() {
   const { u, tv, wide } = useDevice();
   const router = useRouter();
   const user = useAuth((s) => s.user)!;
+  const showInsights = user.role !== 'SUPER_ADMIN' && user.role !== 'ADMIN';
   const can = useCan();
   const q = useSearch((s) => s.q);
   const presetHub = usePresetHub((s) => s.id);
@@ -322,11 +326,10 @@ function PlayersScreen() {
   const chart = (
     <Card>
       <CardH em={wk?.em ?? '8 weeks'}>Performance</CardH>
-      {wk ? <WeekChart labels={wk.labels} series={wk.series} height={u * (wide ? 15 : 14)} revealKey={`${cur}${perf.dataUpdatedAt}`} /> : <Empty>{perf.isLoading ? 'Loading.' : 'No completed rounds yet.'}</Empty>}
+      {wk ? <WeekChart labels={wk.labels} series={wk.series} height={u * (wide ? (showInsights ? 15 : 26) : 14)} revealKey={`${cur}${perf.dataUpdatedAt}`} /> : <Empty>{perf.isLoading ? 'Loading.' : 'No completed rounds yet.'}</Empty>}
     </Card>
   );
   const history = p ? <HistoryTable key={p.id} playerId={p.id} games={p.perf.sessions} accuracy={p.perf.accuracy} /> : null;
-  const showInsights = user.role !== 'SUPER_ADMIN' && user.role !== 'ADMIN';
   const insights = (
     <Card>
       <CardH>Performance Insights &amp; Improvement Plan</CardH>
@@ -343,10 +346,11 @@ function PlayersScreen() {
         <LoadingBlock label="Loading players" />
       ) : wide ? (
         <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: u }}>
-          <View style={{ flex: 1, minWidth: 0, gap: u }}>{left}</View>
+          <View style={{ flex: 1, minWidth: 0, gap: u }}>{left}{showInsights ? insights : null}</View>
           <View style={{ flex: 1.35, minWidth: 0, gap: u }}>
             {p ? <Profile key={p.id} p={p} canManage={canManage} onChanged={() => void detail.refetch()} /> : detail.isLoading ? <LoadingBlock label="Loading player" /> : null}
             {chart}
+            {showInsights ? history : null}
           </View>
         </View>
       ) : (
@@ -360,14 +364,7 @@ function PlayersScreen() {
         </View>
       )}
       {wide && !roster.isLoading && p ? (
-        showInsights ? (
-          <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: u, marginTop: u }}>
-            <View style={{ flex: 1.5, minWidth: 0 }}>{history}</View>
-            <View style={{ flex: 1, minWidth: 0 }}>{insights}</View>
-          </View>
-        ) : (
-          <View style={{ marginTop: u }}>{history}</View>
-        )
+        showInsights ? null : <View style={{ marginTop: u }}>{history}</View>
       ) : null}
       <View style={{ height: u * 0.01 }}>{tv ? null : null}</View>
     </View>

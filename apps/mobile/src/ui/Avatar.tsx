@@ -18,13 +18,13 @@ export function Avatar({ name, size = 44, fs, photoKey }: { name: string; size?:
       <Svg width={size} height={size} style={{ position: 'absolute' }}>
         <Defs>
           <LinearGradient id={id} x1="0" y1="0" x2="1" y2="1">
-            <Stop offset="0" stopColor="#3a1d7a" />
-            <Stop offset="1" stopColor="#101a4a" />
+            <Stop offset="0" stopColor="#2c3a10" />
+            <Stop offset="1" stopColor="#10150a" />
           </LinearGradient>
         </Defs>
         <Circle cx={r} cy={r} r={r - 0.5} fill={`url(#${id})`} stroke={C.borderStrong} strokeWidth={1} />
       </Svg>
-      <Txt v="bodyStrong" size={(fs ?? size * 0.34)} color="#e4e7ff" style={{ lineHeight: size * 0.5 }}>{initials}</Txt>
+      <Txt v="bodyStrong" size={(fs ?? size * 0.34)} color="#D2FF7A" style={{ lineHeight: size * 0.5 }}>{initials}</Txt>
     </View>
   );
 }

@@ -9,7 +9,7 @@ import Svg, { Defs, LinearGradient, Path, Stop } from 'react-native-svg';
 import { useRouter } from 'expo-router';
 import { GAMES, GAME_SLUGS } from '@nboard/shared';
 import type { GameSlug, IconName, Page, PerformanceResponse, PlayerDetail, PlayerListItem, SessionDTO } from '@nboard/shared';
-import { C } from '../theme/tokens';
+import { C, INK } from '../theme/tokens';
 import { glassLo, glassSurface, glowBox, neoIn, neoSurface } from '../theme/surfaces';
 import { useDevice } from '../theme/device';
 import { useGet } from '../lib/queries';
@@ -25,6 +25,9 @@ import { Card } from './Card';
 import { Empty, Facts, Pill, RoundChip, SlideTabs, ChipRow, X } from './Bits';
 import { Gauge } from './Gauge';
 import { ProgressPanel } from './ProgressPanel';
+import { FatigueCard } from './FatigueCard';
+import { ReportCard } from './ReportCard';
+import { AskCard, FlagsCard, PlanCard } from './CoachCards';
 import { GradientFill } from './Gradient';
 import { Icon } from './Icon';
 import { InsightsPanel } from './Insights';
@@ -33,7 +36,6 @@ import { LoadingBlock } from './States';
 const TABS = ['Performance', 'Progress', 'Sessions', 'Comparison', 'Insights', 'Profile'];
 const SOON = ['Mackworth Clock', '2 Back', 'PFTT', 'Stroop Test', '4 Choice Reaction', 'MSIT', 'Colour Shape Task', 'Task Switching'];
 const GAME_ICON: Record<GameSlug, IconName> = { quick: 'bolt', memory: 'memory', hunt: 'ring2', endure: 'flame' };
-const IND = '#B84AFF';
 
 interface BoardItem { id: string; name: string; code: string; avg_rt: number | null; accuracy: number; cv: number | null; rcs: number | null; speed: number | null; score: number | null; spark: number[] }
 
@@ -48,8 +50,8 @@ function Spark({ data }: { data: number[] }) {
     <Svg width={u * 3.6} height={u * 1.5} viewBox="0 0 60 22" accessibilityElementsHidden>
       <Defs>
         <LinearGradient id="spk" x1="0" y1="0" x2="0" y2="1">
-          <Stop offset="0" stopColor="#B84AFF" stopOpacity={0.35} />
-          <Stop offset="1" stopColor="#B84AFF" stopOpacity={0} />
+          <Stop offset="0" stopColor={INK.line} stopOpacity={0.35} />
+          <Stop offset="1" stopColor={INK.line} stopOpacity={0} />
         </LinearGradient>
       </Defs>
       <Path d={`${line}L60,22L0,22Z`} fill="url(#spk)" />
@@ -66,9 +68,9 @@ function GameRow({ slug, on, onPress }: { slug: GameSlug; on: boolean; onPress: 
   return (
     <Pressable onPress={onPress} accessibilityRole="button" accessibilityState={{ selected: on }} style={{ flexDirection: 'row', alignItems: 'center', gap: u * 0.625, borderRadius: u, paddingHorizontal: u * 0.625, paddingVertical: u * 0.5, overflow: 'hidden' }}>
       {on ? <GradientFill /> : null}
-      <View style={{ zIndex: 1 }}><Icon name={GAME_ICON[slug]} size={u * 1.15} color={on ? '#fff' : C.idle} /></View>
-      <X s={0.85} w={on ? 'b' : 'm'} c={on ? '#fff' : C.idle} style={{ flex: 1 }} numberOfLines={1}>{GAMES[slug].name}</X>
-      <View style={{ zIndex: 1 }}><Icon name="chevron" size={u} color={on ? '#fff' : C.faint} /></View>
+      <View style={{ zIndex: 1 }}><Icon name={GAME_ICON[slug]} size={u * 1.15} color={on ? '#000' : C.idle} /></View>
+      <X s={0.85} w={on ? 'b' : 'm'} c={on ? '#000' : C.idle} style={{ flex: 1 }} numberOfLines={1}>{GAMES[slug].name}</X>
+      <View style={{ zIndex: 1 }}><Icon name="chevron" size={u} color={on ? '#000' : C.faint} /></View>
     </Pressable>
   );
 }
@@ -110,7 +112,7 @@ function PlayersPanel({ list, total, sel, setSel, q, setQ, team, setTeam, teams,
         </View>
         {can('MANAGE_PLAYERS') ? (
           <Pressable accessibilityLabel="Add player" accessibilityRole="button" onPress={() => router.push('/players/new' as never)} style={[{ width: u * 2, height: u * 2, borderRadius: u, alignItems: 'center', justifyContent: 'center' }, neoSurface(u)]}>
-            <Icon name="plus" size={u * 1.1} color={IND} />
+            <Icon name="plus" size={u * 1.1} color={INK.line} />
           </Pressable>
         ) : null}
       </View>
@@ -118,13 +120,13 @@ function PlayersPanel({ list, total, sel, setSel, q, setQ, team, setTeam, teams,
         <Icon name="search" size={u} color={C.faint} />
         <TextInput value={q} onChangeText={setQ} placeholder="Search players..." placeholderTextColor={C.faint} style={{ flex: 1, minWidth: 0, color: C.text, fontFamily: 'Manrope_500Medium', fontSize: u * 0.85, padding: 0, outlineStyle: 'none' } as never} />
       </View>
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ flexGrow: 0, marginBottom: u * 0.5 }} contentContainerStyle={{ gap: u * 0.25 }}>
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ flexGrow: 0, marginBottom: u * 0.5 - u * 0.5, marginHorizontal: -u * 0.75, marginTop: -u * 0.5 }} contentContainerStyle={{ gap: u * 0.25, paddingHorizontal: u * 0.75, paddingVertical: u * 0.5 }}>
         {[{ id: 'All', name: 'All' }, ...teams].map((t) => {
           const on = team === t.id;
           return (
             <Pressable key={t.id} onPress={() => setTeam(t.id)} accessibilityRole="button" accessibilityState={{ selected: on }} style={[{ borderRadius: u, overflow: 'hidden', paddingHorizontal: u * 0.625, paddingVertical: u * 0.375 }, on ? null : neoSurface(u)]}>
               {on ? <GradientFill /> : null}
-              <X s={0.72} w="s" c={on ? '#fff' : C.idle}>{t.name}</X>
+              <X s={0.72} w="s" c={on ? '#000' : C.idle}>{t.name}</X>
             </Pressable>
           );
         })}
@@ -133,12 +135,12 @@ function PlayersPanel({ list, total, sel, setSel, q, setQ, team, setTeam, teams,
         {list.map((p) => {
           const on = p.id === sel;
           return (
-            <Pressable key={p.id} onPress={() => setSel(p.id)} accessibilityRole="button" accessibilityState={{ selected: on }} style={[{ flexDirection: 'row', alignItems: 'center', gap: u * 0.625, borderRadius: u * 1.25, overflow: 'hidden', paddingHorizontal: u * 0.5, paddingVertical: u * 0.375 }, on ? { boxShadow: `0 ${u * 0.5}px ${u * 1.4}px -${u * 0.6}px #672BFF` } as never : null]}>
+            <Pressable key={p.id} onPress={() => setSel(p.id)} accessibilityRole="button" accessibilityState={{ selected: on }} style={[{ flexDirection: 'row', alignItems: 'center', gap: u * 0.625, borderRadius: u * 1.25, overflow: 'hidden', paddingHorizontal: u * 0.5, paddingVertical: u * 0.375 }, on ? { boxShadow: `0 ${u * 0.5}px ${u * 1.4}px -${u * 0.6}px #4A7900` } as never : null]}>
               {on ? <GradientFill /> : null}
               <Avatar name={p.display_name} size={u * 2.75} fs={0.85 * 15} />
               <View style={{ flex: 1, minWidth: 0 }}>
                 <X s={0.85} w="b" up numberOfLines={1} style={{ letterSpacing: 0 }}>{firstName(p.display_name)}</X>
-                <X s={0.7} c={on ? 'rgba(255,255,255,.7)' : C.faint}>{p.player_code.toUpperCase()}</X>
+                <X s={0.7} c={on ? 'rgba(0,0,0,.65)' : C.faint}>{p.player_code.toUpperCase()}</X>
               </View>
               <Spark data={sparks[p.id] ?? []} />
             </Pressable>
@@ -156,7 +158,7 @@ function StatTile({ icon, l, v, sb, full }: { icon: IconName; l: string; v: stri
     <Card pad={0.625} tone="glass" style={[{ borderRadius: u * 1.25, minWidth: 0 }, full ? { gridColumn: 'span 2' } as never : null]}>
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: u * 0.625 }}>
         <View style={{ width: u * 2.5, height: u * 2.5, borderRadius: u * 1.25, alignItems: 'center', justifyContent: 'center', backgroundColor: C.primaryDim, boxShadow: 'inset 0 0 0 1px rgba(184,74,255,.25)' } as never}>
-          <Icon name={icon} size={u * 1.2} color={IND} />
+          <Icon name={icon} size={u * 1.2} color={INK.line} />
         </View>
         <View style={{ flex: 1, minWidth: 0 }}>
           <X s={0.6} w="s" up c="#c8cde0" numberOfLines={1}>{l}</X>
@@ -225,8 +227,8 @@ function PlayerPick({ visible, players, selId, onPick, onClose }: { visible: boo
                   {on ? <GradientFill /> : null}
                   <Avatar name={p.display_name} size={u * 2.5} fs={0.8 * 15} />
                   <View style={{ flex: 1, minWidth: 0 }}>
-                    <X s={0.95} w="b" c={on ? '#fff' : C.text} numberOfLines={1}>{p.display_name}</X>
-                    <X s={0.72} c={on ? 'rgba(255,255,255,.75)' : C.faint}>{p.player_code.toUpperCase()}</X>
+                    <X s={0.95} w="b" c={on ? '#000' : C.text} numberOfLines={1}>{p.display_name}</X>
+                    <X s={0.72} c={on ? 'rgba(0,0,0,.65)' : C.faint}>{p.player_code.toUpperCase()}</X>
                   </View>
                 </Pressable>
               );
@@ -307,7 +309,7 @@ export function AnalyticsScreen() {
         <View style={{ flex: 1, minWidth: 0 }}>
           <Pressable disabled={isPlayer} onPress={() => setPick(true)} accessibilityRole="button" accessibilityLabel={`Player: ${name}. Tap to change player`} style={{ flexDirection: 'row', alignItems: 'center', gap: u * 0.5, alignSelf: 'flex-start', minHeight: u * 2.25 }}>
             <X s={1.25} w="b" up>{firstName(name)}</X>
-            {!isPlayer ? <Icon name="chevronDown" size={u * 1.1} color={IND} /> : null}
+            {!isPlayer ? <Icon name="chevronDown" size={u * 1.1} color={INK.line} /> : null}
           </Pressable>
           <X s={0.72} c={C.sub}>{meta}</X>
         </View>
@@ -340,10 +342,11 @@ export function AnalyticsScreen() {
       <Card pad={0.75} style={{ borderRadius: u * 1.6 }}>
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'flex-start', justifyContent: 'space-between', gap: u * 0.5, marginBottom: u * 0.25 }}>
           <Sec t="Reaction Time Through the Round" sub={`Each target response over time · ${GAMES[game].name}`} />
-          <Legend items={[['#B84AFF', 'Reaction Time (ms)'], ['#35C7FF', 'Moving Average']]} />
+          <Legend items={[[INK.line, 'Reaction Time (ms)'], [INK.line2, 'Moving Average']]} />
         </View>
         <RoundChart rows={rows} height={u * (tv ? 12.5 : 13)} revealKey={key} />
       </Card>
+      <FatigueCard targets={T} />
       <View style={{ flexDirection: 'row', flexWrap: tv ? 'nowrap' : 'wrap', gap: u * 0.625 }}>
         {[
           ['bolt', 'Fastest Reaction', S.fast ? `${S.fast.rt} ms` : '--', S.fast ? `Target ${S.fast.n}` : ''],
@@ -361,7 +364,7 @@ export function AnalyticsScreen() {
         <Card pad={0.75} style={{ flex: tv ? 1.3 : undefined, minWidth: 0, borderRadius: u * 1.6 }}>
           <View style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'flex-start', justifyContent: 'space-between', gap: u * 0.5, marginBottom: u * 0.25 }}>
             <Sec t="Performance Trends" sub="Compare key metrics across the round" />
-            <Legend items={[['#B84AFF', 'Reaction Time'], ['#35C7FF', 'Accuracy'], ['#FF4778', 'Speed (targets/s)']]} />
+            <Legend items={[[INK.line, 'Reaction Time'], [INK.line2, 'Accuracy'], ['#FF5263', 'Speed (targets/s)']]} />
           </View>
           <TrendChart rows={rows} height={u * (tv ? 10.5 : 11)} revealKey={key + 't'} />
         </Card>
@@ -398,7 +401,7 @@ export function AnalyticsScreen() {
     const row = (cells: (string | undefined)[], i: number, on: boolean, flex: number[]) => (
       <View key={i} style={[{ flexDirection: 'row', alignItems: 'center', gap: u * 0.5, borderRadius: u, paddingHorizontal: u * 0.5, paddingVertical: u * 0.5, overflow: 'hidden' }, !on && i % 2 ? { backgroundColor: C.tint } : null]}>
         {on ? <GradientFill /> : null}
-        {cells.map((c, j) => <X key={j} s={0.85} w={j === 0 ? 'b' : 'm'} num c={on ? '#fff' : C.text} style={{ flex: flex[j] }} numberOfLines={1}>{c}</X>)}
+        {cells.map((c, j) => <X key={j} s={0.85} w={j === 0 ? 'b' : 'm'} num c={on ? '#000' : C.text} style={{ flex: flex[j] }} numberOfLines={1}>{c}</X>)}
       </View>
     );
     const head = (cells: string[], flex: number[]) => (
@@ -527,7 +530,10 @@ export function AnalyticsScreen() {
             <View style={{ marginBottom: u * 0.5 }}><X s={0.85} w="b" up>Performance Insights &amp; Improvement Plan</X></View>
             {perf.data ? <InsightsPanel bare result={perf.data.insights} /> : <LoadingBlock />}
           </Card>
-          <AiSlot name={firstName(name)} />
+          {base ? <PlanCard key={base} base={base} /> : null}
+          {isPlayer ? null : <FlagsCard />}
+          {isPlayer ? null : <AskCard />}
+          {isPlayer || !pid ? null : <ReportCard key={pid} playerId={pid} name={name} />}
         </View>
       ) : profile}
     </View>
@@ -559,7 +565,7 @@ export function AnalyticsScreen() {
         </ChipRow>
       ) : null}
       <ChipRow>
-        {GAME_SLUGS.map((s, i) => <RoundChip key={s} on={i === gi} label={GAMES[s].name} onPress={() => setGi(i)} icon={<Icon name={GAME_ICON[s]} size={u * 1.1} color={i === gi ? '#fff' : C.idle} />} />)}
+        {GAME_SLUGS.map((s, i) => <RoundChip key={s} on={i === gi} label={GAMES[s].name} onPress={() => setGi(i)} icon={<Icon name={GAME_ICON[s]} size={u * 1.1} color={i === gi ? '#000' : C.idle} />} />)}
       </ChipRow>
       {main}
     </View>

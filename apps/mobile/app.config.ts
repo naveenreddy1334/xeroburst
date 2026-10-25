@@ -14,7 +14,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   version: '1.0.0',
   orientation: 'default',
   userInterfaceStyle: 'automatic',
-  backgroundColor: '#050608',
+  backgroundColor: '#010100',
   icon: './assets/icon.png',
   ios: {
     bundleIdentifier: 'com.nboard.app',
@@ -35,7 +35,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     adaptiveIcon: {
       foregroundImage: './assets/adaptive-foreground.png',
       monochromeImage: './assets/adaptive-monochrome.png',
-      backgroundColor: '#050608',
+      backgroundColor: '#010100',
     },
     predictiveBackGestureEnabled: false,
     permissions: [
@@ -54,7 +54,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   },
   plugins: [
     'expo-router',
-    ['expo-splash-screen', { image: './assets/splash-icon.png', imageWidth: 200, backgroundColor: '#050608' }],
+    ['expo-splash-screen', { image: './assets/splash-icon.png', imageWidth: 200, backgroundColor: '#010100' }],
     'expo-secure-store',
     'expo-font',
     ['expo-image-picker', { photosPermission: 'XeroBurst lets you pick a profile photo. It stays on this device.' }],

@@ -25,10 +25,10 @@ const BLURB: Record<string, string> = {
 };
 
 const MOD: Record<string, { sub: string; tag: string; colors: [string, string]; icon: IconName }> = {
-  nboard: { tag: 'Reflex & focus', sub: 'Four games on the 10-button board: Quick Reaction, Memory Sequence, Target Hunt and Endurance.', colors: ['#7a2bff', '#2a0b6e'], icon: 'bolt' },
-  nbase: { tag: 'Footwork & base', sub: 'Footwork and base training.', colors: ['#3fdcc4', '#0b4f78'], icon: 'flame' },
-  ncourt: { tag: 'Agility & movement', sub: 'Court movement and agility.', colors: ['#12bfd0', '#0a3f8a'], icon: 'target' },
-  npad: { tag: 'Striking & power', sub: 'Pad work and striking drills.', colors: ['#4a62ff', '#161c72'], icon: 'memory' },
+  nboard: { tag: 'Reflex & focus', sub: 'Four games on the 10-button board: Quick Reaction, Memory Sequence, Target Hunt and Endurance.', colors: ['#9BFB00', '#0f1c00'], icon: 'bolt' },
+  nbase: { tag: 'Footwork & base', sub: 'Footwork and base training.', colors: ['#4A7900', '#0a1200'], icon: 'flame' },
+  ncourt: { tag: 'Agility & movement', sub: 'Court movement and agility.', colors: ['#D2FF7A', '#1a2400'], icon: 'target' },
+  npad: { tag: 'Striking & power', sub: 'Pad work and striking drills.', colors: ['#FFBD59', '#2e2008'], icon: 'memory' },
 };
 
 function ModulesScreen() {

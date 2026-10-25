@@ -1,11 +1,11 @@
 // Navigation chrome in the XeroBurst glass look.
 //   Phone:         floating glass bar at the bottom (4 items + More), with a sliding purple pill.
 //   Tablet and TV: a slim icon rail on the left with the same sliding pill, Settings pinned to the bottom.
-//   Top bar:       logo, search, date range, pulse, bell, profile (phone: logo, bell, avatar).
+//   Top bar:       wordmark, search, date range, pulse, bell, profile (phone: wordmark, bell, avatar). The logo is on the login page only.
 // Both bars are built from the menu the shared package derives from permissions.
 
 import { useEffect, useRef, useState } from 'react';
-import { Animated, Modal, Platform, Pressable, ScrollView, TextInput, View } from 'react-native';
+import { Animated, Modal, Platform, Pressable, TextInput, View } from 'react-native';
 import type { LayoutRectangle } from 'react-native';
 import { usePathname, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -18,7 +18,7 @@ import { C, R, alpha } from '../theme/tokens';
 import { glassSurface, glowBox, neoSurface, neoIn } from '../theme/surfaces';
 import { GradientFill } from './Gradient';
 import { Icon } from './Icon';
-import { Logo, Wordmark } from './Logo';
+import { Wordmark } from './Logo';
 import { Avatar } from './Avatar';
 import { Txt } from './Txt';
 import { Dialog } from './Dialog';
@@ -110,7 +110,7 @@ function NavItem({ id, label, icon, active, onPress, onLayout, bar, preferred, p
     Animated.spring(lift, { toValue: active ? 1 : 0, useNativeDriver: Platform.OS !== 'web', stiffness: 380, damping: 22 }).start();
   }, [active, lift]);
   const press = (to: number) => Animated.spring(scale, { toValue: to, useNativeDriver: Platform.OS !== 'web', stiffness: 500, damping: 26 }).start();
-  const fg = active ? '#FFFFFF' : bar ? C.navIdle : C.idle;
+  const fg = active ? '#000000' : bar ? C.navIdle : C.idle;
   return (
     <Pressable
       testID={`nav-${id}`}
@@ -126,7 +126,7 @@ function NavItem({ id, label, icon, active, onPress, onLayout, bar, preferred, p
       style={
         bar
           ? { flex: 1, borderRadius: R.pill, alignItems: 'center', justifyContent: 'center' }
-          : { width: '100%', paddingHorizontal: u * 0.25, paddingVertical: u * 0.25, borderRadius: u * 1.6, alignItems: 'center', justifyContent: 'center', marginTop: push ? 'auto' : 0, borderWidth: focused ? u * 0.16 : 0, borderColor: '#FFFFFF', backgroundColor: focused ? C.tintHi : 'transparent' }
+          : { width: '100%', paddingHorizontal: u * 0.25, paddingVertical: u * 0.4, borderRadius: u * 1.6, alignItems: 'center', justifyContent: 'center', marginTop: push ? 'auto' : 0, borderWidth: focused ? u * 0.16 : 0, borderColor: '#FFFFFF', backgroundColor: focused ? C.tintHi : 'transparent' }
       }
     >
       <Animated.View style={{ alignItems: 'center', gap: bar ? u * 0.125 : 0, transform: [{ scale }, { translateY: lift.interpolate({ inputRange: [0, 1], outputRange: [0, bar ? -1 : 0] }) }] }}>
@@ -155,18 +155,16 @@ export function SideRail() {
   const item = (id: MenuId, push?: boolean) => (
     <NavItem push={push} key={id} id={id} label={MENU[id].label} icon={MENU[id].icon} active={active === id} preferred={tv && id === active} onLayout={put(id)} onPress={() => router.navigate(MENU[id].href as never)} />
   );
+  // No logo up here any more: the icons start lower, level with the page title, and nothing clips the glow of the pill.
   return (
-    <View style={{ width: u * 5.6, paddingTop: insets.top + u * 0.875, paddingBottom: insets.bottom + u * 0.75, paddingLeft: u * 0.75, paddingRight: u * 0.25 }}>
-      <View style={{ height: u * 3.4, alignItems: 'flex-start', justifyContent: 'center' }}>
-        <Logo size={u * 2.75} />
+    <View style={{ width: u * 5.6, paddingTop: insets.top + u * 3.4, paddingBottom: insets.bottom + u * 0.75, paddingHorizontal: u * 0.5, overflow: 'visible' }}>
+      <View style={{ flex: 1, width: '100%', gap: u * 1.0, overflow: 'visible' }}>
+        <Pill rects={rects} active={active} radius={u * 1.6} kind="pill" />
+        <View style={{ flex: 1 }} />
+        {top.map((id) => item(id))}
+        <View style={{ flex: 1 }} />
+        {hasSettings ? item('settings', true) : null}
       </View>
-      <ScrollView style={{ flex: 1, width: '100%' }} contentContainerStyle={{ flexGrow: 1 }} showsVerticalScrollIndicator={false}>
-        <View style={{ flexGrow: 1, gap: u * 0.125 }}>
-          <Pill rects={rects} active={active} radius={u * 1.6} kind="pill" />
-          {top.map((id) => item(id))}
-          {hasSettings ? item('settings', true) : null}
-        </View>
-      </ScrollView>
     </View>
   );
 }
@@ -219,7 +217,7 @@ export function BottomBar() {
 function SheetRow({ icon, label, active, onPress, danger }: { icon: (typeof MENU)[MenuId]['icon'] | 'logout'; label: string; active?: boolean; onPress: () => void; danger?: boolean }) {
   const { focused, handlers } = useFocus();
   const { u } = useDevice();
-  const fg = danger ? '#FF4778' : active ? '#FFFFFF' : C.text;
+  const fg = danger ? '#FF5263' : active ? '#000000' : C.text;
   return (
     <Pressable
       onPress={onPress}
@@ -229,7 +227,7 @@ function SheetRow({ icon, label, active, onPress, danger }: { icon: (typeof MENU
       style={{ flexDirection: 'row', alignItems: 'center', gap: u * 0.9, minHeight: u * 3.2, paddingHorizontal: u, borderRadius: u, overflow: 'hidden', borderWidth: focused ? u * 0.18 : 0, borderColor: '#FFFFFF' }}
     >
       {active ? <GradientFill /> : null}
-      <Icon name={icon} size={u * 1.35} color={active ? '#FFFFFF' : danger ? '#FF4778' : C.sub} />
+      <Icon name={icon} size={u * 1.35} color={active ? '#000000' : danger ? '#FF5263' : C.sub} />
       <Txt v="bodyStrong" color={fg}>{label}</Txt>
     </Pressable>
   );
@@ -265,8 +263,8 @@ function RoundBtn({ icon, label, onPress, dot, testID, tint }: { icon: (typeof M
   const s = wide ? u * 2.5 : u * 2.5;
   return (
     <Pressable testID={testID} onPress={onPress} accessibilityRole="button" accessibilityLabel={label} {...handlers} style={[{ width: s, height: s, borderRadius: u * 1.25, alignItems: 'center', justifyContent: 'center', borderWidth: focused ? u * 0.18 : 0, borderColor: '#FFFFFF' }, neoSurface(u)]}>
-      <Icon name={icon as never} size={u * 1.25} color={tint ?? '#d9d4ee'} />
-      {dot ? <View style={{ position: 'absolute', top: u * 0.5, right: u * 0.5, width: u * 0.5, height: u * 0.5, borderRadius: u * 0.25, backgroundColor: '#FF4778' }} /> : null}
+      <Icon name={icon as never} size={u * 1.25} color={tint ?? C.idle} />
+      {dot ? <View style={{ position: 'absolute', top: u * 0.5, right: u * 0.5, width: u * 0.5, height: u * 0.5, borderRadius: u * 0.25, backgroundColor: '#FF5263' }} /> : null}
     </Pressable>
   );
 }
@@ -349,7 +347,6 @@ export function TopBar() {
   const field = [{ marginLeft: u * 0.75, height: u * 2.5, width: u * 17, borderRadius: u * 1.25, flexDirection: 'row' as const, alignItems: 'center' as const, gap: u * 0.5, paddingHorizontal: u * 0.75 }, glassSurface(u), neoIn(u)];
   return (
     <View style={{ flexDirection: 'row', alignItems: 'center', gap: u * 0.75, paddingTop: insets.top + (wide ? u * 0.875 : u * 0.75), paddingLeft: wide ? u * 1.6 : u, paddingRight: wide ? u * 1.25 : u, paddingBottom: u * 0.25, zIndex: 5 }}>
-      {!wide ? <Logo size={u * 2.25} /> : null}
       <Wordmark height={wide ? u * 1.55 : u * 1.2} />
       {wide && canSearch ? (
         tv ? (

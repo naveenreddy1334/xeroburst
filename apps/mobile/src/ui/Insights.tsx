@@ -15,7 +15,7 @@ import { EmptyBlock, LoadingBlock } from './States';
 
 export const INSIGHTS_TITLE = 'Performance Insights & Improvement Plan';
 
-const DOT = { focus: '#f0c36a', improving: '#5fe0b4', strength: '#5fe0b4', start: '#5594ff' } as const;
+const DOT = { focus: '#f0c36a', improving: '#5fe0b4', strength: '#5fe0b4', start: '#D2FF7A' } as const;
 
 /** One recommendation, as drawn in the design: a dot and title, what the data shows, the metric, then what to practise and the target. */
 function InsightCard({ i }: { i: Insight }) {
@@ -28,11 +28,11 @@ function InsightCard({ i }: { i: Insight }) {
         {i.game ? <Pill>{GAMES[i.game].name}</Pill> : null}
       </View>
       <X s={0.9} c={C.sub}>{i.observation}</X>
-      <X s={0.9 * 0.82} c="rgba(53,199,255,.9)">Metric: {i.evidence}</X>
+      <X s={0.9 * 0.82} c="rgba(155,251,0,.9)">Metric: {i.evidence}</X>
       <View style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', columnGap: u * 0.5, rowGap: u * 0.25 }}>
         <X s={0.9}>Practise: {i.action}</X>
         {i.goal ? (
-          <View style={{ borderRadius: u * 0.5, paddingHorizontal: u * 0.5, paddingVertical: u * 0.125, backgroundColor: 'rgba(53,199,255,.1)' }}>
+          <View style={{ borderRadius: u * 0.5, paddingHorizontal: u * 0.5, paddingVertical: u * 0.125, backgroundColor: 'rgba(155,251,0,.1)' }}>
             <X s={0.9 * 0.82} w="b" c={C.cyan}>Target: {i.goal}</X>
           </View>
         ) : null}

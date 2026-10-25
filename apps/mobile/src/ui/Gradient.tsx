@@ -4,7 +4,7 @@ import type { StyleProp, ViewStyle } from 'react-native';
 import Svg, { Defs, LinearGradient, RadialGradient, Rect, Stop } from 'react-native-svg';
 import { GRADIENT } from '../theme/tokens';
 
-/** The signature gradient (110deg, #9400D3 to #672BFF to #315BFF) as a fill. Put it inside a clipped, rounded parent. */
+/** The signature gradient (110deg, #9BFB00 to #4A7900) as a fill. Put it inside a clipped, rounded parent. */
 export function GradientFill({ opacity = 1, style, vertical }: { opacity?: number; style?: StyleProp<ViewStyle>; vertical?: boolean }) {
   const id = 'g' + useId().replace(/[^a-zA-Z0-9]/g, '');
   return (
@@ -12,7 +12,7 @@ export function GradientFill({ opacity = 1, style, vertical }: { opacity?: numbe
       <Svg width="100%" height="100%" preserveAspectRatio="none" accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
         <Defs>
           <LinearGradient id={id} x1={vertical ? '0' : '0'} y1={vertical ? '0' : '0.17'} x2={vertical ? '0' : '1'} y2={vertical ? '1' : '0.83'}>
-            {(vertical ? [{ offset: 0, color: '#9400D3' }, { offset: 0.5, color: '#672BFF' }, { offset: 1, color: '#315BFF' }] : GRADIENT.stops).map((s) => (
+            {(vertical ? [{ offset: 0, color: '#9BFB00' }, { offset: 1, color: '#4A7900' }] : GRADIENT.stops).map((s) => (
               <Stop key={s.offset} offset={s.offset} stopColor={s.color} stopOpacity={opacity} />
             ))}
           </LinearGradient>

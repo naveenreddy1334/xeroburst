@@ -7,7 +7,7 @@ import { useRouter } from 'expo-router';
 import Svg, { Defs, RadialGradient, Rect, Stop } from 'react-native-svg';
 import { GAMES } from '@nboard/shared';
 import type { InsightsResult, Page, PerformanceResponse, SessionDTO } from '@nboard/shared';
-import { C } from '../../../theme/tokens';
+import { C, INK } from '../../../theme/tokens';
 import { useDevice } from '../../../theme/device';
 import { useGet } from '../../../lib/queries';
 import { useAuth } from '../../../state/auth';
@@ -48,7 +48,7 @@ function Glow() {
 function Row({ cells, widths, on, odd, onPress, head }: { cells: React.ReactNode[]; widths: number[]; on?: boolean; odd?: boolean; onPress?: () => void; head?: boolean }) {
   const { u } = useDevice();
   const inner = (
-    <View style={[{ flexDirection: 'row', alignItems: 'center', gap: u * 0.5, paddingHorizontal: u * 0.75, paddingVertical: head ? u * 0.5 : u * 0.625, borderRadius: u }, on ? ({ backgroundColor: C.tintHi, boxShadow: 'inset 0 0 0 1px rgba(53,199,255,.3)' } as never) : odd ? { backgroundColor: C.tint } : null]}>
+    <View style={[{ flexDirection: 'row', alignItems: 'center', gap: u * 0.5, paddingHorizontal: u * 0.75, paddingVertical: head ? u * 0.5 : u * 0.625, borderRadius: u }, on ? ({ backgroundColor: C.tintHi, boxShadow: 'inset 0 0 0 1px rgba(210,255,122,.3)' } as never) : odd ? { backgroundColor: C.tint } : null]}>
       {cells.map((c, i) => <View key={i} style={{ flex: widths[i], minWidth: 0 }}>{c}</View>)}
     </View>
   );
@@ -82,10 +82,10 @@ export default function ResultsScreen() {
     return { labels: d.map((x) => fmtDay(x.day + 'T12:00:00Z')), rt: d.map((x) => x.avg_rt), fast: d.map((x) => x.best_rt), acc: d.map((x) => x.accuracy), miss: d.map((x) => x.misses) };
   }, [pl, myPerf.data, ov.data]);
   const mser: WeekSeries[] = [
-    { name: 'Avg reaction (ms)', data: main.rt, color: '#35C7FF', axis: 0 },
-    { name: 'Fastest (ms)', data: main.fast, color: '#B84AFF', axis: 0 },
-    { name: 'Accuracy (%)', data: main.acc, color: '#6c8cff', axis: 1 },
-    { name: 'Misses', data: main.miss, color: '#FF4778', axis: 2, dash: true },
+    { name: 'Avg reaction (ms)', data: main.rt, color: INK.line2, axis: 0 },
+    { name: 'Fastest (ms)', data: main.fast, color: INK.line, axis: 0 },
+    { name: 'Accuracy (%)', data: main.acc, color: '#FFBD59', axis: 1 },
+    { name: 'Misses', data: main.miss, color: '#FF5263', axis: 2, dash: true },
   ];
 
   // The chosen round in six equal slices of its duration.
@@ -102,10 +102,10 @@ export default function ResultsScreen() {
     return {
       labels: b.map((_, i) => `${Math.round(i * st)}-${Math.round((i + 1) * st)}s`),
       series: [
-        { name: 'Avg reaction (ms)', color: '#35C7FF', axis: 0, data: b.map((x) => (x.rt.length ? Math.round(x.rt.reduce((p, c) => p + c, 0) / x.rt.length) : null)) },
-        { name: 'Accuracy (%)', color: '#6c8cff', axis: 1, data: b.map((x) => (x.h + x.m ? r1((x.h / (x.h + x.m)) * 100) : null)) },
-        { name: 'Hits', color: '#27E5B5', axis: 2, data: b.map((x) => x.h) },
-        { name: 'Misses', color: '#FF4778', axis: 2, dash: true, data: b.map((x) => x.m) },
+        { name: 'Avg reaction (ms)', color: INK.line2, axis: 0, data: b.map((x) => (x.rt.length ? Math.round(x.rt.reduce((p, c) => p + c, 0) / x.rt.length) : null)) },
+        { name: 'Accuracy (%)', color: '#FFBD59', axis: 1, data: b.map((x) => (x.h + x.m ? r1((x.h / (x.h + x.m)) * 100) : null)) },
+        { name: 'Hits', color: INK.line, axis: 2, data: b.map((x) => x.h) },
+        { name: 'Misses', color: '#FF5263', axis: 2, dash: true, data: b.map((x) => x.m) },
       ] as WeekSeries[],
     };
   }, [hits.data, r]);
@@ -158,7 +158,7 @@ export default function ResultsScreen() {
                   txt(phone ? GAMES[x.game].name.split(' ')[0] + ' L' + x.level : GAMES[x.game].name),
                   ...(phone ? [] : [txt(String(x.level)), txt(String(x.summary?.correct_hits ?? 0))]),
                   txt(String(x.summary?.misses ?? 0)),
-                  txt(a + '%', a >= 93 ? '#27E5B5' : a < 90 ? C.warning : undefined),
+                  txt(a + '%', a >= 93 ? INK.line : a < 90 ? C.warning : undefined),
                   ...(phone ? [] : [txt(`${x.summary?.avg_rt ?? '--'} ms`)]),
                 ];
                 return <Row key={x.id} widths={cols} cells={cells} on={i === sel} odd={i % 2 === 1} onPress={() => setSel(i)} />;

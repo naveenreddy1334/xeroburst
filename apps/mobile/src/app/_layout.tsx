@@ -62,6 +62,7 @@ function IdleGuard() {
   useEffect(() => {
     const bump = () => (last.current = Date.now());
     if (Platform.OS === 'web') {
+      if (typeof document !== 'undefined') document.title = 'XeroBurst';
       const ev = ['pointerdown', 'keydown', 'wheel'] as const;
       ev.forEach((e) => globalThis.addEventListener?.(e, bump));
       return () => ev.forEach((e) => globalThis.removeEventListener?.(e, bump));

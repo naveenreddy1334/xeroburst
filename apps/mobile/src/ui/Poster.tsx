@@ -5,7 +5,7 @@ import { Pressable, StyleSheet, View } from 'react-native';
 import Svg, { Defs, LinearGradient, Path, RadialGradient, Rect, Stop } from 'react-native-svg';
 import { useId } from 'react';
 import type { IconName } from '@nboard/shared';
-import { C, alpha } from '../theme/tokens';
+import { C, alpha, getThemeMode } from '../theme/tokens';
 import { glassLo, glassSurface } from '../theme/surfaces';
 import { useDevice } from '../theme/device';
 import { Icon } from './Icon';
@@ -13,11 +13,18 @@ import { GlassLight } from './Card';
 import { Txt } from './Txt';
 import { useFocus } from './useFocus';
 
+/** A darker mix of a hex colour: factor 1 keeps it, 0 is black. */
+function shade(hex: string, f: number): string {
+  const n = parseInt(hex.replace('#', ''), 16);
+  const c = (v: number) => Math.round(v * f).toString(16).padStart(2, '0');
+  return `#${c((n >> 16) & 255)}${c((n >> 8) & 255)}${c(n & 255)}`;
+}
+
 export const POSTER_COLORS: Record<string, [string, string]> = {
-  quick: ['#35C7FF', '#0a1f3a'],
-  memory: ['#B84AFF', '#240a3a'],
-  hunt: ['#FF4778', '#2e0f1b'],
-  endure: ['#315BFF', '#0d1a4a'],
+  quick: ['#9BFB00', '#0f1c00'],
+  memory: ['#D2FF7A', '#1a2400'],
+  hunt: ['#FFBD59', '#2e2008'],
+  endure: ['#FF5263', '#2e0f14'],
 };
 
 interface Props {
@@ -39,6 +46,9 @@ export function Poster({ title, sub, tag, colors, icon, locked, onPress, testID,
   const { focused, handlers } = useFocus();
   const id = 'p' + useId().replace(/[^a-zA-Z0-9]/g, '');
   const [c0, c1] = colors;
+  // On pale paper the bright accent is too light for icons and small text, so they use a darker mix of the same colour.
+  const light = getThemeMode() === 'light';
+  const ink = light ? shade(c0, 0.6) : c0;
   return (
     <Pressable
       testID={testID}
@@ -63,21 +73,21 @@ export function Poster({ title, sub, tag, colors, icon, locked, onPress, testID,
             </RadialGradient>
             <LinearGradient id={id + 'l'} x1="0" y1="0" x2="0" y2="1">
               <Stop offset="0.4" stopColor={c1} stopOpacity={0} />
-              <Stop offset="1" stopColor={c1} stopOpacity={0.75} />
+              <Stop offset="1" stopColor={c1} stopOpacity={light ? 0.06 : 0.75} />
             </LinearGradient>
           </Defs>
           <Rect x="0" y="0" width="100%" height="100%" fill={`url(#${id}r)`} />
           <Rect x="0" y="0" width="100%" height="100%" fill={`url(#${id}l)`} />
         </Svg>
       </View>
-      <View pointerEvents="none" style={{ width: u * 3.6, height: u * 3.6, borderRadius: u * 1.1, alignItems: 'center', justifyContent: 'center', backgroundColor: alpha(c0, 0.18) }}>
-        <Icon name={icon} size={u * 2.2} color={c0} strokeWidth={1.8} />
+      <View pointerEvents="none" style={{ width: u * 3.6, height: u * 3.6, borderRadius: u * 1.1, alignItems: 'center', justifyContent: 'center', backgroundColor: alpha(c0, light ? 0.3 : 0.18) }}>
+        <Icon name={icon} size={u * 2.2} color={ink} strokeWidth={1.8} />
       </View>
       <View style={{ alignItems: 'center', gap: u * 0.25 }}>
         <Txt v="h2" size={17.25} numberOfLines={2} style={{ fontFamily: 'Manrope_600SemiBold', letterSpacing: -0.2, lineHeight: u * 1.45, textAlign: 'center' }}>{title}</Txt>
         {tag ? (
-          <View style={{ borderRadius: 999, paddingHorizontal: u * 0.7, paddingVertical: u * 0.15, backgroundColor: alpha(c0, 0.16) }}>
-            <Txt v="small" size={11.2} color={c0} style={{ fontFamily: 'Manrope_700Bold', textAlign: 'center' }}>{tag}</Txt>
+          <View style={{ borderRadius: 999, paddingHorizontal: u * 0.7, paddingVertical: u * 0.15, backgroundColor: alpha(c0, light ? 0.28 : 0.16) }}>
+            <Txt v="small" size={11.2} color={ink} style={{ fontFamily: 'Manrope_700Bold', textAlign: 'center' }}>{tag}</Txt>
           </View>
         ) : null}
         <Txt v="small" size={12.75} numberOfLines={3} style={{ textAlign: 'center' }}>{sub}</Txt>
