@@ -220,6 +220,8 @@ function Glyph({ name }: { name: IconName }) {
       );
     case 'trophy':
       return p('M8 4h8v5a4 4 0 0 1-8 0zM8 6H4v1a4 4 0 0 0 4 4M16 6h4v1a4 4 0 0 1-4 4M12 13v4M8 21h8M10 17h4');
+    case 'wallet':
+      return p('M4 7h15a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h11v3M16 13.5h3.5');
     case 'wifi':
       return (
         <>

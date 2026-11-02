@@ -1,5 +1,5 @@
 import Database from 'better-sqlite3';
-import { MIGRATIONS } from './migrations.js';
+import { MIGRATIONS, REBUILD_MIGRATIONS } from './migrations.js';
 import { seed } from './seed.js';
 
 export type DB = Database.Database;
@@ -22,10 +22,21 @@ export function migrate(db: DB): void {
     );
   }
   for (let v = current; v < MIGRATIONS.length; v++) {
-    db.transaction(() => {
-      db.exec(MIGRATIONS[v]!);
-      db.pragma(`user_version = ${v + 1}`);
-    })();
+    const rebuild = REBUILD_MIGRATIONS.has(v + 1);
+    // Foreign keys can only be switched off outside a transaction.
+    if (rebuild) db.pragma('foreign_keys = OFF');
+    try {
+      db.transaction(() => {
+        db.exec(MIGRATIONS[v]!);
+        if (rebuild) {
+          const bad = db.pragma('foreign_key_check') as unknown[];
+          if (bad.length) throw new Error(`Migration ${v + 1} left ${bad.length} broken references; nothing was changed.`);
+        }
+        db.pragma(`user_version = ${v + 1}`);
+      })();
+    } finally {
+      if (rebuild) db.pragma('foreign_keys = ON');
+    }
   }
 }
 

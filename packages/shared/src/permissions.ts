@@ -2,13 +2,15 @@
 // This file is the single source of truth: the server enforces it and the app mirrors it.
 // Code must ask can(user, PERMISSION). It must never write `if (role === "COACH")`.
 
-export const ROLES = ['SUPER_ADMIN', 'ADMIN', 'COACH', 'PLAYER'] as const;
+export const ROLES = ['SUPER_ADMIN', 'ADMIN', 'HUB_MANAGER', 'BRANCH_MANAGER', 'COACH', 'PLAYER'] as const;
 export type Role = (typeof ROLES)[number];
 
 /** Rank decides who may manage whom. Scope decides which data a person can see. */
 export const ROLE_RANK: Record<Role, number> = {
-  SUPER_ADMIN: 4,
-  ADMIN: 3,
+  SUPER_ADMIN: 6,
+  ADMIN: 5, // legacy tier: reaches every hub
+  HUB_MANAGER: 4,
+  BRANCH_MANAGER: 3,
   COACH: 2,
   PLAYER: 1,
 };
@@ -16,6 +18,8 @@ export const ROLE_RANK: Record<Role, number> = {
 export const ROLE_LABEL: Record<Role, string> = {
   SUPER_ADMIN: 'Super Admin',
   ADMIN: 'Admin',
+  HUB_MANAGER: 'Hub Admin',
+  BRANCH_MANAGER: 'Branch Admin',
   COACH: 'Coach',
   PLAYER: 'Player',
 };
@@ -32,6 +36,9 @@ export const PERMISSIONS = [
   'VIEW_RESULTS',
   'VIEW_AUDIT',
   'MANAGE_HUBS',
+  'VIEW_ORG',
+  'MANAGE_ORG',
+  'VIEW_FINANCE',
   'PLAY_GAME',
   'VIEW_OWN_RESULTS',
   'VIEW_OWN_PROGRESS',
@@ -40,7 +47,7 @@ export type Permission = (typeof PERMISSIONS)[number];
 
 export const PERMISSION_HELP: Record<Permission, string> = {
   MANAGE_SYSTEM: 'Server settings, backup, system screen',
-  MANAGE_ADMINS: 'Create, edit and deactivate Admin accounts',
+  MANAGE_ADMINS: 'Create, edit and deactivate Admin accounts (the older tier that reaches every hub)',
   MANAGE_COACHES: 'Create, edit and deactivate Coaches, reassign players',
   CREATE_COACHES: 'Create Coach accounts only',
   MANAGE_PLAYERS: 'Create and edit players, reset credentials',
@@ -50,6 +57,9 @@ export const PERMISSION_HELP: Record<Permission, string> = {
   VIEW_RESULTS: 'View results and analytics of players in scope',
   VIEW_AUDIT: 'View the audit log',
   MANAGE_HUBS: 'Create hubs, assign people to them, compare hubs',
+  VIEW_ORG: 'View the organization (hubs, academies, branches) within one\'s scope',
+  MANAGE_ORG: 'Create and edit academies and branches, assign managers and coaches within one\'s scope',
+  VIEW_FINANCE: 'View the platform-wide finance dashboard',
   PLAY_GAME: 'Start sessions and play',
   VIEW_OWN_RESULTS: 'View one\'s own results',
   VIEW_OWN_PROGRESS: 'View one\'s own game states and stage',
@@ -72,6 +82,9 @@ export const ROLE_PERMISSIONS: Record<Role, readonly Permission[]> = {
     'VIEW_RESULTS',
     'VIEW_AUDIT',
     'MANAGE_HUBS',
+    'VIEW_ORG',
+    'MANAGE_ORG',
+    'VIEW_FINANCE',
     'PLAY_GAME',
     'VIEW_OWN_RESULTS',
     'VIEW_OWN_PROGRESS',
@@ -86,6 +99,35 @@ export const ROLE_PERMISSIONS: Record<Role, readonly Permission[]> = {
     'VIEW_RESULTS',
     'VIEW_AUDIT',
     'MANAGE_HUBS',
+    'VIEW_ORG',
+    'MANAGE_ORG',
+    'PLAY_GAME',
+    'VIEW_OWN_RESULTS',
+  ],
+  // A Hub Manager runs one hub: its academy and branches, the people in it, and their reports. Scope is enforced on the server.
+  HUB_MANAGER: [
+    'MANAGE_COACHES',
+    'CREATE_COACHES',
+    'MANAGE_PLAYERS',
+    'MANAGE_GAME_ACCESS',
+    'MANAGE_GAME_PROGRESS',
+    'MANAGE_PROGRAMS',
+    'VIEW_RESULTS',
+    'VIEW_ORG',
+    'MANAGE_ORG',
+    'PLAY_GAME',
+    'VIEW_OWN_RESULTS',
+  ],
+  // A Branch Manager runs one branch: its coaches and players.
+  BRANCH_MANAGER: [
+    'MANAGE_COACHES',
+    'CREATE_COACHES',
+    'MANAGE_PLAYERS',
+    'MANAGE_GAME_ACCESS',
+    'MANAGE_GAME_PROGRESS',
+    'MANAGE_PROGRAMS',
+    'VIEW_RESULTS',
+    'VIEW_ORG',
     'PLAY_GAME',
     'VIEW_OWN_RESULTS',
   ],
@@ -156,6 +198,10 @@ export function canCreateRole(actor: Actor, target: Role): boolean {
       return false;
     case 'ADMIN':
       return can(actor, 'MANAGE_ADMINS') && outranks(actor.role, 'ADMIN');
+    case 'HUB_MANAGER':
+      return can(actor, 'MANAGE_HUBS') && outranks(actor.role, 'HUB_MANAGER');
+    case 'BRANCH_MANAGER':
+      return can(actor, 'MANAGE_ORG') && outranks(actor.role, 'BRANCH_MANAGER');
     case 'COACH':
       return (
         (can(actor, 'MANAGE_COACHES') && outranks(actor.role, 'COACH')) ||
@@ -174,6 +220,10 @@ export function canManageRole(actor: Actor, target: Role): boolean {
       return false;
     case 'ADMIN':
       return can(actor, 'MANAGE_ADMINS');
+    case 'HUB_MANAGER':
+      return can(actor, 'MANAGE_HUBS');
+    case 'BRANCH_MANAGER':
+      return can(actor, 'MANAGE_ORG');
     case 'COACH':
       return can(actor, 'MANAGE_COACHES');
     case 'PLAYER':
@@ -183,25 +233,35 @@ export function canManageRole(actor: Actor, target: Role): boolean {
 
 /** Section 23: menu entries, built from permissions. A convenience for the UI; the server decides. */
 export type MenuId =
+  | 'business'
   | 'dashboard'
   | 'modules'
+  | 'progress'
+  | 'pay'
   | 'players'
   | 'programs'
   | 'results'
   | 'coaches'
   | 'admins'
   | 'hubs'
+  | 'organization'
+  | 'finance'
   | 'audit'
   | 'system'
   | 'settings';
 
 export const MENU_ORDER: MenuId[] = [
+  'business',
   'dashboard',
   'modules',
+  'progress',
+  'pay',
   'players',
   'coaches',
   'admins',
   'hubs',
+  'organization',
+  'finance',
   'programs',
   'results',
   'audit',
@@ -211,8 +271,16 @@ export const MENU_ORDER: MenuId[] = [
 
 export function menuFor(actor: Actor | null | undefined): MenuId[] {
   if (!actor) return [];
+  // The Super Admin runs the business: hubs, organization and finance. Player analytics, results, players and programs belong to
+  // the coaches. (Only the menu changes; what each role may call on the server is unchanged.)
+  const superAdmin = actor.role === 'SUPER_ADMIN';
   return MENU_ORDER.filter((id) => {
+    if (superAdmin && (id === 'dashboard' || id === 'players' || id === 'programs' || id === 'results')) return false;
+    // The chart is Super Admin > Hub Admin or Branch Admin > Coach > Player. Hub Admins and Branch Admins are made under Organization.
+    if (superAdmin && id === 'admins') return false;
     switch (id) {
+      case 'business':
+        return superAdmin;
       case 'dashboard':
         return isStaff(actor.role); // Analytics is for coaches and above; players have no Analytics
       case 'results':
@@ -220,6 +288,10 @@ export function menuFor(actor: Actor | null | undefined): MenuId[] {
         return true;
       case 'modules':
         return can(actor, 'PLAY_GAME');
+      case 'progress':
+        return actor.role === 'PLAYER'; // a player's own streak and goal
+      case 'pay':
+        return actor.role === 'PLAYER'; // a player's own fees, Pay now and payment history
       case 'players':
         return can(actor, 'MANAGE_PLAYERS');
       case 'programs':
@@ -230,6 +302,10 @@ export function menuFor(actor: Actor | null | undefined): MenuId[] {
         return can(actor, 'MANAGE_ADMINS');
       case 'hubs':
         return can(actor, 'MANAGE_HUBS');
+      case 'organization':
+        return can(actor, 'VIEW_ORG');
+      case 'finance':
+        return can(actor, 'VIEW_FINANCE');
       case 'audit':
         return can(actor, 'VIEW_AUDIT');
       case 'system':

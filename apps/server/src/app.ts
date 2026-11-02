@@ -27,6 +27,8 @@ import { programRoutes } from './routes/programs.js';
 import { gameRoutes } from './routes/games.js';
 import { resultRoutes } from './routes/results.js';
 import { hubRoutes } from './routes/hubs.js';
+import { orgRoutes } from './routes/org.js';
+import { financeRoutes } from './routes/finance.js';
 import { systemRoutes } from './routes/system.js';
 import { markInterrupted, sweepStaleSessions } from './services/sessions.js';
 import { lanAddresses } from './util/net.js';
@@ -126,6 +128,8 @@ export async function buildApp(over: Partial<Config> = {}) {
       gameRoutes(api, ctx, guards);
       resultRoutes(api, ctx, guards);
       hubRoutes(api, ctx, guards);
+      orgRoutes(api, ctx, guards);
+      financeRoutes(api, ctx, guards);
       systemRoutes(api, ctx, guards);
       api.setNotFoundHandler((_req, reply) => reply.code(404).send({ error: { code: 'NOT_FOUND', message: ERROR_MESSAGE.NOT_FOUND } }));
     },

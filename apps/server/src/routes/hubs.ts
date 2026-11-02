@@ -7,6 +7,7 @@ import { auditReq } from '../audit.js';
 import type { Guards } from '../rbac/guard.js';
 import { newId } from '../db/seed.js';
 import { parse } from '../util/http.js';
+import { orgScope } from '../rbac/scope.js';
 import { compareHubs, hubById, hubSummary, listHubs } from '../services/hubs.js';
 
 const idParam = z.object({ id: z.string().min(1).max(64) });
@@ -16,7 +17,10 @@ export function hubRoutes(app: FastifyInstance, ctx: Ctx, g: Guards) {
   // Everyone signed in as staff can read the list (the forms need it); a Coach sees only their own hub.
   app.get('/hubs', { preHandler: g.need('MANAGE_PLAYERS', 'MANAGE_HUBS', 'VIEW_RESULTS') }, async (req) => {
     const all = listHubs(ctx);
-    return { items: req.auth.role === 'COACH' && req.auth.hub_id ? all.filter((h) => h.id === req.auth.hub_id) : all };
+    const sc = orgScope(req.auth);
+    // Everyone except an Admin or Super Admin sees only the hub they belong to (and a manager without a hub sees none).
+    if (sc.kind === 'all') return { items: all };
+    return { items: req.auth.hub_id ? all.filter((h) => h.id === req.auth.hub_id) : [] };
   });
 
   app.post('/hubs', { preHandler: g.need('MANAGE_HUBS') }, async (req, reply) => {

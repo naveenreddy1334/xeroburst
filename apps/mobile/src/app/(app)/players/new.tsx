@@ -1,6 +1,6 @@
 // S16 Create player. On success the PIN is shown once on the credentials screen.
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { validatePin } from '@nboard/shared';
@@ -9,7 +9,8 @@ import { C } from '../../../theme/tokens';
 import { useDevice } from '../../../theme/device';
 import { ApiClientError } from '../../../lib/api';
 import { useGet, useSend } from '../../../lib/queries';
-import { useCan } from '../../../state/auth';
+import { useAuth, useCan } from '../../../state/auth';
+import { usePresetHub } from '../../../state/shell';
 import { useCredentials } from '../../../state/ui';
 import { RequirePermission } from '../../../ui/RequirePermission';
 import { Screen } from '../../../ui/Screen';
@@ -29,6 +30,11 @@ function NewPlayerForm() {
   const { tv } = useDevice();
   const can = useCan();
   const pickCoach = can('MANAGE_COACHES');
+  // The Super Admin has no Players list (players live inside coach cards), so this form returns to Coaches.
+  const home = useAuth((s) => s.user?.role) === 'SUPER_ADMIN' ? '/coaches' : '/players';
+  // Opened from a hub: only that hub's coaches are offered, so the player lands in the hub it was started from.
+  const presetHub = usePresetHub((s) => s.id);
+  const [allHubs, setAllHubs] = useState(false);
 
   const [name, setName] = useState('');
   const [age, setAge] = useState('');
@@ -43,11 +49,16 @@ function NewPlayerForm() {
   const coaches = useGet<Page<UserDTO>>('/users', { role: 'COACH', active: '1', limit: 100 }, { enabled: pickCoach && !tv });
   const programs = useGet<{ items: ProgramDTO[] }>('/programs', undefined, { enabled: !tv });
   const create = useSend<CreatedPlayerResponse, CreatePlayerBody>('post', '/players', ['/players', '/programs']);
+  const hubCoaches = (coaches.data?.items ?? []).filter((c) => allHubs || !presetHub || c.hub?.id === presetHub);
+  useEffect(() => {
+    // One coach in the hub: choose them, so the form is ready to save.
+    if (presetHub && !allHubs && !coachId && hubCoaches.length === 1) setCoachId(hubCoaches[0]!.id);
+  }, [presetHub, allHubs, coachId, hubCoaches.length]); // eslint-disable-line react-hooks/exhaustive-deps
 
   if (tv) {
     return (
       <Screen>
-        <Header title="New player" back="/players" />
+        <Header title="New player" back={home} />
         <TvNotice />
       </Screen>
     );
@@ -84,8 +95,9 @@ function NewPlayerForm() {
         secret: r.credentials.pin,
         secretLabel: 'PIN',
         note: 'Give these to the player. The PIN is not shown again.',
-        back: '/players',
+        back: home,
       });
+      usePresetHub.getState().set(null);
       router.replace('/players/credentials' as never);
     } catch (err) {
       if (err instanceof ApiClientError && Object.keys(err.fields).length) setErrs(err.fields);
@@ -97,7 +109,7 @@ function NewPlayerForm() {
 
   return (
     <Screen maxWidth={760} testID="screen-player-new">
-      <Header title="New player" back="/players" />
+      <Header title="New player" back={home} />
       <Txt v="small">Fields marked * are required.</Txt>
       <Field label="Name" required value={name} onChangeText={setName} autoCapitalize="words" error={errs.display_name} placeholder="Full name" returnKeyType="next" />
       <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 12 }}>
@@ -129,11 +141,14 @@ function NewPlayerForm() {
             <ErrorBlock error={coaches.error} onRetry={() => void coaches.refetch()} />
           ) : !coaches.data?.items.length ? (
             <EmptyBlock icon="user" title="No active coaches" message="Create a Coach first, then add players." />
+          ) : hubCoaches.length === 0 ? (
+            <EmptyBlock icon="user" title="This hub has no active coach" message="Add a coach to the hub first, or choose a coach from another hub." action={{ label: 'Show all coaches', onPress: () => setAllHubs(true) }} />
           ) : (
             <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
-              {coaches.data.items.map((c) => (
-                <Chip key={c.id} label={c.display_name} icon="user" selected={coachId === c.id} onPress={() => setCoachId(c.id)} />
+              {hubCoaches.map((c) => (
+                <Chip key={c.id} label={c.hub ? `${c.display_name} · ${c.hub.name}` : c.display_name} icon="user" selected={coachId === c.id} onPress={() => setCoachId(c.id)} />
               ))}
+              {presetHub && !allHubs ? <Chip label="Other hubs" selected={false} onPress={() => setAllHubs(true)} /> : null}
             </View>
           )}
           {errs.coach_id ? <Txt v="small" color={C.danger}>{errs.coach_id}</Txt> : null}

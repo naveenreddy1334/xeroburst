@@ -25,9 +25,9 @@ const BLURB: Record<string, string> = {
 };
 
 const MOD: Record<string, { sub: string; tag: string; colors: [string, string]; icon: IconName }> = {
-  nboard: { tag: 'Reflex & focus', sub: 'Four games on the 10-button board: Quick Reaction, Memory Sequence, Target Hunt and Endurance.', colors: ['#9BFB00', '#0f1c00'], icon: 'bolt' },
-  nbase: { tag: 'Footwork & base', sub: 'Footwork and base training.', colors: ['#4A7900', '#0a1200'], icon: 'flame' },
-  ncourt: { tag: 'Agility & movement', sub: 'Court movement and agility.', colors: ['#D2FF7A', '#1a2400'], icon: 'target' },
+  nboard: { tag: 'Reflex & focus', sub: 'Four games on the 10-button board: Quick Reaction, Memory Sequence, Target Hunt and Endurance.', colors: ['#DEB35C', '#1a1305'], icon: 'bolt' },
+  nbase: { tag: 'Footwork & base', sub: 'Footwork and base training.', colors: ['#8A6422', '#140e04'], icon: 'flame' },
+  ncourt: { tag: 'Agility & movement', sub: 'Court movement and agility.', colors: ['#F3D48A', '#241a08'], icon: 'target' },
   npad: { tag: 'Striking & power', sub: 'Pad work and striking drills.', colors: ['#FFBD59', '#2e2008'], icon: 'memory' },
 };
 

@@ -35,6 +35,7 @@ export type IconName =
   | 'close'
   | 'clock'
   | 'trophy'
+  | 'wallet'
   | 'wifi'
   | 'bluetooth'
   | 'qr'

@@ -26,33 +26,50 @@ import { usePresetHub, useSelPlayer } from '../../../state/shell';
 const pct = (v: number | null) => (v === null ? '--' : `${Math.round(v)}%`);
 const SOURCE: Record<string, string> = { auto: 'Automatic', nfc: 'NFC tap', biometric: 'Biometric', manual: 'Marked by hand' };
 
-function People({ title, rows, onOpen }: { title: string; rows: HubPerson[]; onOpen?: (id: string) => void }) {
+function PersonRow({ r, onOpen, half }: { r: HubPerson; onOpen?: (id: string) => void; half: boolean }) {
   const { u } = useDevice();
   return (
+    <Pressable disabled={!onOpen} onPress={() => onOpen?.(r.id)} accessibilityRole={onOpen ? 'button' : undefined} style={[{ width: half ? '49.2%' : '100%', flexGrow: half ? 0 : 1, flexDirection: 'row', alignItems: 'center', gap: u * 0.75, borderRadius: u * 1.25, paddingHorizontal: u, paddingVertical: u * 0.625, opacity: r.active ? 1 : 0.55 }, glassLo()]}>
+      <View style={{ flex: 1, minWidth: 0 }}>
+        <X s={0.95} w="b" numberOfLines={1}>{r.name}{r.code ? <X s={0.78} c={C.faint}>  {r.code}</X> : null}{r.active ? '' : '  · Inactive'}</X>
+        <X s={0.78} c={C.sub} numberOfLines={1}>{r.last_seen ? `Last seen ${fmtDateTime(r.last_seen)}` : 'Not seen in this period'}</X>
+      </View>
+      <View style={{ alignItems: 'flex-end' }}>
+        <X s={0.95} w="x" num>{pct(r.attendance_pct)}</X>
+        <X s={0.7} c={C.faint}>{r.days_present} {r.days_present === 1 ? 'day' : 'days'}</X>
+      </View>
+      {r.role === 'PLAYER' ? (
+        <View style={{ alignItems: 'flex-end', minWidth: u * 3.5 }}>
+          <X s={0.95} w="b" num>{pct(r.accuracy)}</X>
+          <X s={0.7} c={C.faint}>{r.rounds} {r.rounds === 1 ? 'round' : 'rounds'}</X>
+        </View>
+      ) : null}
+    </Pressable>
+  );
+}
+
+/** Players and coaches of the hub in one card: pick a tab, search when the list is long, and open more as needed. Two columns on wide
+ *  screens, so a hub with three people or three hundred fills the space the same way. */
+function People({ coaches, players, onOpen }: { coaches: HubPerson[]; players: HubPerson[]; onOpen: (id: string) => void }) {
+  const { u, wide } = useDevice();
+  const [tab, setTab] = useState<'players' | 'coaches'>('players');
+  const [q, setQ] = useState('');
+  const [limit, setLimit] = useState(10);
+  const rows = tab === 'players' ? players : coaches;
+  const list = rows.filter((r) => !q || r.name.toLowerCase().includes(q.toLowerCase()) || (r.code ?? '').toLowerCase().includes(q.toLowerCase()));
+  return (
     <Card>
-      <CardH em={`${rows.filter((r) => r.active).length} active of ${rows.length}`}>{title}</CardH>
-      {rows.length === 0 ? <Empty>No one here yet.</Empty> : (
-        <View style={{ gap: u * 0.5 }}>
-          {rows.map((r) => (
-            <Pressable key={r.id} disabled={!onOpen} onPress={() => onOpen?.(r.id)} accessibilityRole={onOpen ? 'button' : undefined} style={[{ flexDirection: 'row', alignItems: 'center', gap: u * 0.75, borderRadius: u * 1.25, paddingHorizontal: u, paddingVertical: u * 0.625, opacity: r.active ? 1 : 0.55 }, glassLo()]}>
-              <View style={{ flex: 1, minWidth: 0 }}>
-                <X s={0.95} w="b" numberOfLines={1}>{r.name}{r.code ? <X s={0.78} c={C.faint}>  {r.code}</X> : null}{r.active ? '' : '  · Inactive'}</X>
-                <X s={0.78} c={C.sub} numberOfLines={1}>{r.last_seen ? `Last seen ${fmtDateTime(r.last_seen)}` : 'Not seen in this period'}</X>
-              </View>
-              <View style={{ alignItems: 'flex-end' }}>
-                <X s={0.95} w="x" num>{pct(r.attendance_pct)}</X>
-                <X s={0.7} c={C.faint}>{r.days_present} {r.days_present === 1 ? 'day' : 'days'}</X>
-              </View>
-              {r.role === 'PLAYER' ? (
-                <View style={{ alignItems: 'flex-end', minWidth: u * 3.5 }}>
-                  <X s={0.95} w="b" num>{pct(r.accuracy)}</X>
-                  <X s={0.7} c={C.faint}>{r.rounds} {r.rounds === 1 ? 'round' : 'rounds'}</X>
-                </View>
-              ) : null}
-            </Pressable>
-          ))}
+      <CardH em={`${rows.filter((r) => r.active).length} active of ${rows.length}`}>People</CardH>
+      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: u * 0.5, marginBottom: u * 0.5 }}>
+        <Seg<'players' | 'coaches'> items={[['players', `Players ${players.length}`], ['coaches', `Coaches ${coaches.length}`]]} value={tab} onChange={(t) => { setTab(t); setLimit(10); setQ(''); }} />
+      </View>
+      {rows.length > 8 ? <Field inline label="Search" value={q} onChangeText={(t) => { setQ(t); setLimit(10); }} placeholder={tab === 'players' ? 'Name or NB code' : 'Name'} /> : null}
+      {rows.length === 0 ? <Empty>No one here yet.</Empty> : list.length === 0 ? <Empty>No match.</Empty> : (
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: u * 0.5, marginTop: rows.length > 8 ? u * 0.5 : 0 }}>
+          {list.slice(0, limit).map((r) => <PersonRow key={r.id} r={r} half={wide} onOpen={tab === 'players' ? onOpen : undefined} />)}
         </View>
       )}
+      {list.length > limit ? <Button size="sm" variant="ghost" label={`Show ${Math.min(20, list.length - limit)} more (${list.length - limit} left)`} onPress={() => setLimit(limit + 20)} /> : null}
     </Card>
   );
 }
@@ -60,22 +77,40 @@ function People({ title, rows, onOpen }: { title: string; rows: HubPerson[]; onO
 function Attendance({ s }: { s: HubSummary }) {
   const { u } = useDevice();
   const max = Math.max(1, ...s.series.map((d) => d.coaches + d.players));
-  const h = u * 6;
+  const h = u * 7;
+  const days = s.series.length;
+  const withData = s.series.filter((d) => d.coaches + d.players > 0).length;
+  const short = (d: string) => new Date(`${d}T00:00:00Z`).toLocaleDateString(undefined, { day: 'numeric', month: 'short', timeZone: 'UTC' });
+  const ticks = [max, Math.round(max / 2), 0];
   return (
     <Card>
       <CardH em="people present per day">Attendance</CardH>
-      <View style={{ flexDirection: 'row', alignItems: 'flex-end', gap: 2, height: h }}>
-        {s.series.map((d) => {
-          const t = d.coaches + d.players;
-          return (
-            <View key={d.day} style={{ flex: 1, height: h, justifyContent: 'flex-end' }} accessibilityLabel={`${d.day}: ${d.players} players, ${d.coaches} coaches`}>
-              <View style={{ height: Math.max(t ? 3 : 1, (t / max) * h), borderRadius: 3, overflow: 'hidden', backgroundColor: t ? C.primary : C.tint }}>
-                <View style={{ height: `${t ? (d.coaches / t) * 100 : 0}%`, backgroundColor: C.cyan }} />
-              </View>
+      {withData === 0 ? <Empty>No check-ins in this period yet. Presence is recorded automatically when someone signs in or plays a round.</Empty> : (
+        <View style={{ flexDirection: 'row', gap: u * 0.5 }}>
+          <View style={{ height: h, justifyContent: 'space-between' }}>
+            {ticks.map((t, i) => <X key={i} s={0.7} c={C.faint} num style={{ textAlign: 'right', minWidth: u * 1.2 }}>{t}</X>)}
+          </View>
+          <View style={{ flex: 1, minWidth: 0 }}>
+            <View style={{ height: h, flexDirection: 'row', alignItems: 'flex-end', gap: days > 20 ? 2 : u * 0.3, borderBottomWidth: 1, borderBottomColor: C.border }}>
+              {s.series.map((d) => {
+                const t = d.coaches + d.players;
+                return (
+                  <View key={d.day} style={{ flex: 1, height: h, justifyContent: 'flex-end' }} accessibilityLabel={`${d.day}: ${d.players} players, ${d.coaches} coaches`}>
+                    <View style={{ height: t ? Math.max(4, (t / max) * h) : 0, borderRadius: 3, overflow: 'hidden', backgroundColor: C.primary, justifyContent: 'flex-end' }}>
+                      <View style={{ height: `${t ? (d.coaches / t) * 100 : 0}%`, backgroundColor: C.cyan }} />
+                    </View>
+                  </View>
+                );
+              })}
             </View>
-          );
-        })}
-      </View>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: u * 0.25 }}>
+              <X s={0.7} c={C.faint}>{short(s.series[0]!.day)}</X>
+              <X s={0.7} c={C.faint}>{short(s.series[Math.floor(days / 2)]!.day)}</X>
+              <X s={0.7} c={C.faint}>{short(s.series[days - 1]!.day)}</X>
+            </View>
+          </View>
+        </View>
+      )}
       <View style={{ flexDirection: 'row', gap: u, marginTop: u * 0.5, flexWrap: 'wrap' }}>
         <X s={0.75} c={C.faint}><X s={0.75} c={C.primary}>■</X> Players   <X s={0.75} c={C.cyan}>■</X> Coaches</X>
         <X s={0.75} c={C.faint}>Source: {Object.keys(s.sources).length ? Object.entries(s.sources).map(([k, n]) => `${SOURCE[k] ?? k} (${n})`).join(', ') : 'none yet'}</X>
@@ -120,7 +155,8 @@ function AddPeople({ hub, onChanged }: { hub: HubDTO; onChanged: () => void }) {
     const r = await act.run('add' + rid, () => api.patch(open === 'PLAYER' ? `/players/${rid}` : `/users/${rid}`, { hub_id: hub.id }), `Added to ${hub.name}.`);
     if (r.ok) onChanged();
   };
-  const startNew = (kind: 'PLAYER' | 'COACH') => { usePresetHub.getState().set(hub.id); router.push((kind === 'PLAYER' ? '/players' : '/coaches') as never); };
+  // New player opens the new-player form (it picks from this hub's coaches); New coach opens Coaches with the create form and this hub chosen.
+  const startNew = (kind: 'PLAYER' | 'COACH') => { usePresetHub.getState().set(hub.id); router.push((kind === 'PLAYER' ? '/players/new' : '/coaches') as never); };
   return (
     <Card>
       <CardH>Add people to this hub</CardH>
@@ -174,10 +210,7 @@ function HubDetail({ id }: { id: string }) {
           </Card>
           <AddPeople hub={s.hub} onChanged={() => void q.refetch()} />
           <Attendance s={s} />
-          <View style={wide ? { flexDirection: 'row', alignItems: 'flex-start', gap: u } : { gap: u }}>
-            <View style={{ flex: 1, minWidth: 0 }}><People title="Coaches" rows={s.coaches} /></View>
-            <View style={{ flex: 1, minWidth: 0 }}><People title="Players" rows={s.players} onOpen={(pid) => { setSel(pid); router.push('/players' as never); }} /></View>
-          </View>
+          <People coaches={s.coaches} players={s.players} onOpen={(pid) => { setSel(pid); router.push(`/players/${pid}` as never); }} />
           <Card>
             <CardH>People without a hub</CardH>
             <X s={0.88} c={C.sub} style={{ marginBottom: u * 0.5 }}>Accounts made before hubs existed have none. Put all of them in this hub with one tap.</X>

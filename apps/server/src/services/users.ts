@@ -5,6 +5,7 @@ import { getProgram, playerProgram } from './programs.js';
 import { accessItems } from './access.js';
 import { perfOf } from './performance.js';
 import { hubRef } from './hubs.js';
+import { branchRef } from './org.js';
 
 export interface UserRow {
   id: string;
@@ -21,10 +22,11 @@ export interface UserRow {
   age?: number | null;
   inactive_reason?: string | null;
   hub_id?: string | null;
+  branch_id?: string | null;
 }
 
 export const USER_COLS =
-  'id, login_id, display_name, role, is_active, must_change_password, created_at, last_login_at, locked_until, email, phone, age, inactive_reason, hub_id';
+  'id, login_id, display_name, role, is_active, must_change_password, created_at, last_login_at, locked_until, email, phone, age, inactive_reason, hub_id, branch_id';
 
 export function userDTO(ctx: Ctx, u: UserRow): UserDTO {
   const dto: UserDTO = {
@@ -42,6 +44,7 @@ export function userDTO(ctx: Ctx, u: UserRow): UserDTO {
     age: u.age ?? null,
     inactive_reason: u.is_active ? null : u.inactive_reason ?? null,
     hub: hubRef(ctx, u.hub_id),
+    branch: branchRef(ctx, u.branch_id),
   };
   if (u.role === 'COACH') {
     dto.players_count = (ctx.db.prepare('SELECT COUNT(*) c FROM player_profiles WHERE coach_id = ?').get(u.id) as { c: number }).c;
@@ -56,6 +59,7 @@ export function playerListItem(ctx: Ctx, row: Record<string, unknown>): PlayerLi
   return {
     id: row.id as string,
     hub: hubRef(ctx, row.hub_id as string | null),
+    branch: branchRef(ctx, row.branch_id as string | null),
     player_code: row.player_code as string,
     display_name: row.display_name as string,
     age: (row.age as number | null) ?? null,
@@ -75,7 +79,7 @@ export function playerListItem(ctx: Ctx, row: Record<string, unknown>): PlayerLi
 }
 
 export const PLAYER_LIST_SQL = `
-  SELECT u.id, u.hub_id, u.display_name, p.player_code, p.age, p.status, u.inactive_reason, p.pin_reset_requested, p.coach_id, c.display_name AS coach_name,
+  SELECT u.id, u.hub_id, u.branch_id, u.display_name, p.player_code, p.age, p.status, u.inactive_reason, p.pin_reset_requested, p.coach_id, c.display_name AS coach_name,
          (SELECT COUNT(*) FROM player_game_access a JOIN games g ON g.id = a.game_id
            WHERE a.player_id = u.id AND g.enabled = 1 AND a.state IN ('unlocked','completed')) AS games_unlocked,
          (SELECT COUNT(*) FROM games WHERE enabled = 1) AS games_total,

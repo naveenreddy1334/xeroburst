@@ -1,7 +1,7 @@
 // Navigation chrome in the XeroBurst glass look.
 //   Phone:         floating glass bar at the bottom (4 items + More), with a sliding purple pill.
 //   Tablet and TV: a slim icon rail on the left with the same sliding pill, Settings pinned to the bottom.
-//   Top bar:       wordmark, search, date range, pulse, bell, profile (phone: wordmark, bell, avatar). The logo is on the login page only.
+//   Top bar:       wordmark, search, date range, pulse, bell, profile (phone: wordmark, bell, avatar). The X mark sits beside the wordmark.
 // Both bars are built from the menu the shared package derives from permissions.
 
 import { useEffect, useRef, useState } from 'react';
@@ -9,7 +9,7 @@ import { Animated, Modal, Platform, Pressable, TextInput, View } from 'react-nat
 import type { LayoutRectangle } from 'react-native';
 import { usePathname, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { menuFor } from '@nboard/shared';
+import { ROLE_LABEL, menuFor } from '@nboard/shared';
 import type { MenuId } from '@nboard/shared';
 import { useAuth } from '../state/auth';
 import { useRange, useSearch } from '../state/shell';
@@ -18,7 +18,7 @@ import { C, R, alpha } from '../theme/tokens';
 import { glassSurface, glowBox, neoSurface, neoIn } from '../theme/surfaces';
 import { GradientFill } from './Gradient';
 import { Icon } from './Icon';
-import { Wordmark } from './Logo';
+import { Mark, Wordmark } from './Logo';
 import { Avatar } from './Avatar';
 import { Txt } from './Txt';
 import { Dialog } from './Dialog';
@@ -101,6 +101,9 @@ function Pill({ rects, active, radius, kind }: { rects: Rects; active: string | 
 
 // ---- items ------------------------------------------------------------------------------------------------------
 
+/** Labels too long for the bottom bar. */
+const SHORT: Record<string, string> = { Organization: 'Org' };
+
 function NavItem({ id, label, icon, active, onPress, onLayout, bar, preferred, push }: { push?: boolean; id: string; label: string; icon: (typeof MENU)[MenuId]['icon']; active: boolean; onPress: () => void; onLayout: (e: { nativeEvent: { layout: LayoutRectangle } }) => void; bar?: boolean; preferred?: boolean }) {
   const { focused, handlers } = useFocus();
   const { u } = useDevice();
@@ -129,10 +132,10 @@ function NavItem({ id, label, icon, active, onPress, onLayout, bar, preferred, p
           : { width: '100%', paddingHorizontal: u * 0.25, paddingVertical: u * 0.4, borderRadius: u * 1.6, alignItems: 'center', justifyContent: 'center', marginTop: push ? 'auto' : 0, borderWidth: focused ? u * 0.16 : 0, borderColor: '#FFFFFF', backgroundColor: focused ? C.tintHi : 'transparent' }
       }
     >
-      <Animated.View style={{ alignItems: 'center', gap: bar ? u * 0.125 : 0, transform: [{ scale }, { translateY: lift.interpolate({ inputRange: [0, 1], outputRange: [0, bar ? -1 : 0] }) }] }}>
+      <Animated.View style={{ alignItems: 'center', maxWidth: '100%', gap: bar ? u * 0.125 : 0, transform: [{ scale }, { translateY: lift.interpolate({ inputRange: [0, 1], outputRange: [0, bar ? -1 : 0] }) }] }}>
         <Icon name={icon} size={bar ? u * 1.5 : u * 1.15} color={fg} />
-        <Txt v="small" size={bar ? 11.7 : 10.2} color={fg} numberOfLines={1} style={{ letterSpacing: 0, lineHeight: bar ? u * 1.1 : u * 0.9, fontFamily: bar ? 'Manrope_700Bold' : 'Manrope_500Medium' }}>
-          {label}
+        <Txt v="small" size={bar ? 11.7 : 10.2} color={fg} numberOfLines={bar ? 1 : 2} style={{ letterSpacing: 0, textAlign: 'center', lineHeight: bar ? u * 1.1 : u * 0.9, fontFamily: bar ? 'Manrope_700Bold' : 'Manrope_500Medium' }}>
+          {bar ? (SHORT[label] ?? label) : label}
         </Txt>
       </Animated.View>
     </Pressable>
@@ -153,7 +156,7 @@ export function SideRail() {
   const top = items.filter((m) => m !== 'settings');
   const hasSettings = items.includes('settings');
   const item = (id: MenuId, push?: boolean) => (
-    <NavItem push={push} key={id} id={id} label={MENU[id].label} icon={MENU[id].icon} active={active === id} preferred={tv && id === active} onLayout={put(id)} onPress={() => router.navigate(MENU[id].href as never)} />
+    <NavItem push={push} key={id} id={id} label={MENU[id].label} icon={MENU[id].icon} active={active === id} preferred={tv && id === active} onLayout={put(id)} onPress={() => router.replace(MENU[id].href as never)} />
   );
   // No logo up here any more: the icons start lower, level with the page title, and nothing clips the glow of the pill.
   return (
@@ -193,7 +196,7 @@ export function BottomBar() {
           <View style={{ flex: 1, flexDirection: 'row' }}>
             <Pill rects={rects} active={moreActive ? 'more' : active} radius={R.pill} kind="bar" />
             {inBar.map((id) => (
-              <NavItem key={id} bar id={id} label={MENU[id].label} icon={MENU[id].icon} active={active === id} onLayout={put(id)} onPress={() => router.navigate(MENU[id].href as never)} />
+              <NavItem key={id} bar id={id} label={MENU[id].label} icon={MENU[id].icon} active={active === id} onLayout={put(id)} onPress={() => router.replace(MENU[id].href as never)} />
             ))}
             {rest.length ? <NavItem key="more" bar id="more" label="More" icon="more" active={moreActive} onLayout={put('more')} onPress={() => setMore(true)} /> : null}
           </View>
@@ -203,7 +206,7 @@ export function BottomBar() {
         <Pressable style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', justifyContent: 'flex-end' }} onPress={() => setMore(false)}>
           <View style={[{ borderTopLeftRadius: u * 1.6, borderTopRightRadius: u * 1.6, padding: u * 1.25, paddingBottom: insets.bottom + u * 1.5, gap: u * 0.4 }, glassSurface(u, true)]}>
             {rest.map((id) => (
-              <SheetRow key={id} icon={MENU[id].icon} label={MENU[id].label} active={active === id} onPress={() => { setMore(false); router.navigate(MENU[id].href as never); }} />
+              <SheetRow key={id} icon={MENU[id].icon} label={MENU[id].label} active={active === id} onPress={() => { setMore(false); router.replace(MENU[id].href as never); }} />
             ))}
             <View style={{ height: 1, backgroundColor: C.border, marginVertical: 4 }} />
             <SignOutRow onDone={() => setMore(false)} />
@@ -300,7 +303,7 @@ function ProfileMenu() {
   const [open, setOpen] = useState(false);
   const { wide, u } = useDevice();
   const { focused, handlers } = useFocus();
-  const roleLabel = user.role.replace('_', ' ').toLowerCase().replace(/^\w/, (c) => c.toUpperCase());
+  const roleLabel = ROLE_LABEL[user.role as keyof typeof ROLE_LABEL] ?? user.role;
   return (
     <>
       <Pressable testID="profile-menu" onPress={() => setOpen(true)} accessibilityRole="button" accessibilityLabel="Profile menu" {...handlers} style={{ flexDirection: 'row', alignItems: 'center', gap: u * 0.625, borderRadius: u * 1.25, borderWidth: focused ? u * 0.18 : 0, borderColor: '#FFFFFF' }}>
@@ -347,7 +350,10 @@ export function TopBar() {
   const field = [{ marginLeft: u * 0.75, height: u * 2.5, width: u * 17, borderRadius: u * 1.25, flexDirection: 'row' as const, alignItems: 'center' as const, gap: u * 0.5, paddingHorizontal: u * 0.75 }, glassSurface(u), neoIn(u)];
   return (
     <View style={{ flexDirection: 'row', alignItems: 'center', gap: u * 0.75, paddingTop: insets.top + (wide ? u * 0.875 : u * 0.75), paddingLeft: wide ? u * 1.6 : u, paddingRight: wide ? u * 1.25 : u, paddingBottom: u * 0.25, zIndex: 5 }}>
-      <Wordmark height={wide ? u * 1.55 : u * 1.2} />
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: wide ? u * 0.7 : u * 0.55 }}>
+        <Mark size={wide ? u * 2.6 : u * 2} />
+        <Wordmark height={wide ? u * 1.55 : u * 1.2} />
+      </View>
       {wide && canSearch ? (
         tv ? (
           <Pressable onPress={() => router.navigate('/players' as never)} accessibilityRole="button" accessibilityLabel="Search players" style={field}>

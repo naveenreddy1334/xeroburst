@@ -135,7 +135,7 @@ function PlayersPanel({ list, total, sel, setSel, q, setQ, team, setTeam, teams,
         {list.map((p) => {
           const on = p.id === sel;
           return (
-            <Pressable key={p.id} onPress={() => setSel(p.id)} accessibilityRole="button" accessibilityState={{ selected: on }} style={[{ flexDirection: 'row', alignItems: 'center', gap: u * 0.625, borderRadius: u * 1.25, overflow: 'hidden', paddingHorizontal: u * 0.5, paddingVertical: u * 0.375 }, on ? { boxShadow: `0 ${u * 0.5}px ${u * 1.4}px -${u * 0.6}px #4A7900` } as never : null]}>
+            <Pressable key={p.id} onPress={() => setSel(p.id)} accessibilityRole="button" accessibilityState={{ selected: on }} style={[{ flexDirection: 'row', alignItems: 'center', gap: u * 0.625, borderRadius: u * 1.25, overflow: 'hidden', paddingHorizontal: u * 0.5, paddingVertical: u * 0.375 }, on ? { boxShadow: `0 ${u * 0.5}px ${u * 1.4}px -${u * 0.6}px #8A6422` } as never : null]}>
               {on ? <GradientFill /> : null}
               <Avatar name={p.display_name} size={u * 2.75} fs={0.85 * 15} />
               <View style={{ flex: 1, minWidth: 0 }}>

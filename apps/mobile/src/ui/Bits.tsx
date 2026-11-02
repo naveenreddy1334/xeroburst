@@ -24,7 +24,7 @@ export function X({ s = 1, w = 'm', c, up, num, style, children, ...rest }: { s?
 
 export function Pill({ t = '', children }: { t?: 'good' | 'off' | 'warn' | ''; children: React.ReactNode }) {
   const { u } = useDevice();
-  const bg = t === 'good' ? 'rgba(155,251,0,.12)' : t === 'off' ? C.tint : t === 'warn' ? 'rgba(255,189,89,.12)' : C.tint;
+  const bg = t === 'good' ? 'rgba(222,179,92,.12)' : t === 'off' ? C.tint : t === 'warn' ? 'rgba(255,189,89,.12)' : C.tint;
   const fg = t === 'good' ? C.success : t === 'off' ? C.faint : t === 'warn' ? C.warning : C.text;
   return (
     <View style={{ alignSelf: 'flex-start', paddingHorizontal: u * 0.75, paddingVertical: u * 0.25, borderRadius: 999, backgroundColor: bg }}>
@@ -37,8 +37,12 @@ export function Facts({ items }: { items: [string, string | number][] }) {
   const { u } = useDevice();
   const [w, setW] = useState(0);
   const gap = u * 0.625;
-  const cols = Math.max(1, Math.floor((w + gap) / (u * 7 + gap)));
-  const cw = w ? (w - gap * (cols - 1)) / cols : u * 7;
+  // As many columns as fit, but never more than there are tiles, and balanced so the last row is not left short: the tiles always
+  // fill the width of the card, whatever the screen size or number of tiles.
+  const fit = Math.max(1, Math.floor((w + gap) / (u * 7 + gap)));
+  const rows = Math.ceil(items.length / Math.min(fit, Math.max(1, items.length)));
+  const cols = Math.max(1, Math.ceil(items.length / rows));
+  const cw = w ? (w - gap * (cols - 1)) / cols - 0.5 : u * 7;
   return (
     <View onLayout={(e) => setW(e.nativeEvent.layout.width)} style={{ flexDirection: 'row', flexWrap: 'wrap', gap }}>
       {items.map(([l, v]) => (
@@ -172,8 +176,8 @@ export function Seg<T extends string | number>({ items, value, onChange }: { ite
       {items.map(([k, l]) => {
         const on = value === k;
         return (
-          <Pressable key={String(k)} accessibilityRole="button" accessibilityState={{ selected: on }} onPress={() => onChange(k)} style={[{ minHeight: u * 2.25, minWidth: u * 3, paddingHorizontal: u, borderRadius: u * 0.5, alignItems: 'center', justifyContent: 'center' }, on ? ({ backgroundColor: C.tintHi, boxShadow: 'inset 0 1px 0 rgba(255,255,255,.12), inset 0 0 0 1px rgba(155,251,0,.25)' } as never) : null]}>
-            <X s={0.85} w="b" c={on ? '#F3FAE6' : C.sub} style={{ whiteSpace: 'nowrap' } as TextStyle}>{l}</X>
+          <Pressable key={String(k)} accessibilityRole="button" accessibilityState={{ selected: on }} onPress={() => onChange(k)} style={[{ minHeight: u * 2.25, minWidth: u * 3, paddingHorizontal: u, borderRadius: u * 0.5, alignItems: 'center', justifyContent: 'center' }, on ? ({ backgroundColor: C.tintHi, boxShadow: 'inset 0 1px 0 rgba(255,255,255,.12), inset 0 0 0 1px rgba(222,179,92,.25)' } as never) : null]}>
+            <X s={0.85} w="b" c={on ? '#F7F3EA' : C.sub} style={{ whiteSpace: 'nowrap' } as TextStyle}>{l}</X>
           </Pressable>
         );
       })}

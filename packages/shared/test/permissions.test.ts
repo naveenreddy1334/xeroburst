@@ -71,23 +71,39 @@ describe('rank rules (section 13.1)', () => {
 });
 
 describe('menu by role (section 23)', () => {
-  it('Player sees no staff entries', () => {
-    expect(menuFor(pl)).toEqual(['modules', 'results', 'settings']);
+  it('Player sees no staff entries, plus their own progress', () => {
+    expect(menuFor(pl)).toEqual(['modules', 'progress', 'pay', 'results', 'settings']);
   });
   it('Coach sees players and programs', () => {
     expect(menuFor(co)).toEqual(['dashboard', 'modules', 'players', 'programs', 'results', 'settings']);
   });
   it('Admin adds coaches and audit', () => {
-    expect(menuFor(ad)).toEqual(['dashboard', 'modules', 'players', 'coaches', 'hubs', 'programs', 'results', 'audit', 'settings']);
+    expect(menuFor(ad)).toEqual(['dashboard', 'modules', 'players', 'coaches', 'hubs', 'organization', 'programs', 'results', 'audit', 'settings']);
   });
-  it('Super Admin sees every menu, including Modules and Programs', () => {
-    expect(menuFor(sa)).toEqual(['dashboard', 'modules', 'players', 'coaches', 'admins', 'hubs', 'programs', 'results', 'audit', 'system', 'settings']);
+  it('Super Admin sees the business menus only: no Analytics, Players, Programs or Results', () => {
+    expect(menuFor(sa)).toEqual(['business', 'modules', 'coaches', 'hubs', 'organization', 'finance', 'audit', 'system', 'settings']);
+  });
+  it('Admin and Coach keep Analytics, Players and Results; only the Super Admin has Overview', () => {
+    expect(menuFor(ad)).not.toContain('business');
+    expect(menuFor(co)).not.toContain('business');
+    for (const id of ['dashboard', 'players', 'results'] as const) expect(menuFor(ad)).toContain(id);
+    for (const id of ['dashboard', 'players', 'results'] as const) expect(menuFor(co)).toContain(id);
+  });
+  it('only the Super Admin sees Finance; managers see Organization but not Admins or System', () => {
+    expect(menuFor(ad)).not.toContain('finance');
+    for (const role of ['HUB_MANAGER', 'BRANCH_MANAGER'] as const) {
+      const m = menuFor({ role, grants: [] } as never);
+      expect(m).toContain('organization');
+      expect(m).not.toContain('finance');
+      expect(m).not.toContain('admins');
+      expect(m).not.toContain('system');
+    }
   });
   it('Admin, Coach and Player menus are unchanged', () => {
-    expect(menuFor(ad)).toEqual(['dashboard', 'modules', 'players', 'coaches', 'hubs', 'programs', 'results', 'audit', 'settings']);
+    expect(menuFor(ad)).toEqual(['dashboard', 'modules', 'players', 'coaches', 'hubs', 'organization', 'programs', 'results', 'audit', 'settings']);
     expect(menuFor(co)).toContain('modules');
     expect(menuFor(co)).toContain('programs');
-    expect(menuFor(pl)).toEqual(['modules', 'results', 'settings']);
+    expect(menuFor(pl)).toEqual(['modules', 'progress', 'pay', 'results', 'settings']);
   });
 });
 

@@ -36,6 +36,8 @@ interface Props {
   preferredFocus?: boolean;
   testID?: string;
   returnKeyType?: 'done' | 'next' | 'go';
+  /** sits in a row beside a button: no space under it, so the box and the button share a bottom edge */
+  inline?: boolean;
   autoComplete?: 'username' | 'password' | 'off' | 'new-password' | 'current-password';
 }
 type KeyboardType = KeyboardTypeOptions;
@@ -62,12 +64,13 @@ export function Field({
   testID,
   returnKeyType,
   autoComplete,
+  inline,
 }: Props) {
   const { tv, u } = useDevice();
   const { focused, handlers } = useFocus();
   const [reveal, setReveal] = useState(false);
   const [kb, setKb] = useState(false);
-  const ring = error ? `0 0 0 ${u * 0.13}px rgba(255,122,138,.8)` : focused ? (tv ? `0 0 0 ${u * 0.18}px #fff` : `0 0 0 ${u * 0.13}px rgba(155,251,0,.7)`) : undefined;
+  const ring = error ? `0 0 0 ${u * 0.13}px rgba(255,122,138,.8)` : focused ? (tv ? `0 0 0 ${u * 0.18}px #fff` : `0 0 0 ${u * 0.13}px rgba(222,179,92,.7)`) : undefined;
   const box = {
     minHeight: u * 3.2,
     borderRadius: u,
@@ -82,7 +85,7 @@ export function Field({
   } as object;
 
   return (
-    <View style={{ gap: u * 0.375, marginBottom: u * 0.75, minWidth: 0 }}>
+    <View style={{ gap: u * 0.375, marginBottom: inline ? 0 : u * 0.75, minWidth: 0 }}>
       <Txt v="body" size={0.85 * 15} color={C.sub} style={{ fontFamily: F.body }}>
         {label}
         {required ? <Txt v="body" size={0.85 * 15} color={C.danger}>{' *'}</Txt> : null}
@@ -151,9 +154,9 @@ export function Field({
           {right}
         </View>
       )}
-      <View style={{ minHeight: u * 1.1 }}>
+      {inline && !error && !hint ? null : <View style={{ minHeight: inline ? 0 : u * 1.1 }}>
         {error ? <Txt v="body" size={0.8 * 15} color={C.danger}>{error}</Txt> : hint ? <Txt v="small" size={0.8 * 15}>{hint}</Txt> : null}
-      </View>
+      </View>}
     </View>
   );
 }

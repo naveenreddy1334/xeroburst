@@ -13,7 +13,7 @@ import { C } from '../theme/tokens';
 import { useDevice } from '../theme/device';
 import { useFocus } from './useFocus';
 
-const RG: [string, string][] = [['#9BFB00', '#4A7900'], ['#D2FF7A', '#4A7900'], ['#D2FF7A', '#4A7900']];
+const RG: [string, string][] = [['#DEB35C', '#8A6422'], ['#F3D48A', '#8A6422'], ['#F3D48A', '#8A6422']];
 
 function AuthRing({ v, ci, size }: { v: number; ci: number; size: number }) {
   const id = 'ar' + useId().replace(/[^a-zA-Z0-9]/g, '');
@@ -41,7 +41,7 @@ function GradLine({ text, fs }: { text: string; fs: number }) {
     <Svg width={w} height={fs * 1.3} accessibilityLabel={text}>
       <Defs>
         <LinearGradient id={id} x1="0" y1="0" x2="1" y2="0">
-          <Stop offset="0" stopColor="#9BFB00" />
+          <Stop offset="0" stopColor="#DEB35C" />
           <Stop offset="1" stopColor="#6c8cff" />
         </LinearGradient>
       </Defs>

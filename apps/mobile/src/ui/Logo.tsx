@@ -13,8 +13,8 @@ export function Wordmark({ height = 22 }: { height?: number }) {
     <Svg width={w} height={height} viewBox="0 0 190 27" accessibilityLabel="XEROBURST">
       <Defs>
         <LinearGradient id="wm" x1="0" y1="0" x2="1" y2="0">
-          <Stop offset="0" stopColor={light ? '#3C6200' : '#9BFB00'} />
-          <Stop offset="1" stopColor={light ? '#4A7900' : '#4A7900'} />
+          <Stop offset="0" stopColor={light ? '#7A5516' : '#DEB35C'} />
+          <Stop offset="1" stopColor={light ? '#8A6422' : '#8A6422'} />
         </LinearGradient>
       </Defs>
       <SvgText x="0" y="21" fill="url(#wm)" fontSize="24" fontWeight="800" fontFamily={F.display} textLength="188" lengthAdjust="spacing">
@@ -22,6 +22,11 @@ export function Wordmark({ height = 22 }: { height?: number }) {
       </SvgText>
     </Svg>
   );
+}
+
+/** Just the X mark, for the top bar beside the wordmark. */
+export function Mark({ size = 32 }: { size?: number }) {
+  return <Image source={MARK} accessibilityLabel="XeroBurst logo" style={{ width: size * 0.97, height: size }} resizeMode="contain" />;
 }
 
 /** The XeroBurst mark (the X). With `word`, the gradient name sits underneath. */

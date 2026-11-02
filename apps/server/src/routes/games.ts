@@ -15,7 +15,7 @@ import { ApiError, notFound } from '../errors.js';
 import type { Guards } from '../rbac/guard.js';
 import { gamesForUser } from '../services/games.js';
 import { abortSession, createSession, finishSession, loadSession, sessionDTO } from '../services/sessions.js';
-import { playerInScope } from '../rbac/scope.js';
+import { isScopedStaff, playerInScope } from '../rbac/scope.js';
 import { parse } from '../util/http.js';
 
 const slugParam = z.object({ slug: z.enum(GAME_SLUGS) });
@@ -78,7 +78,7 @@ export function gameRoutes(app: FastifyInstance, ctx: Ctx, g: Guards) {
       if (!req.auth.permissions.includes('VIEW_RESULTS')) throw new ApiError('OUT_OF_SCOPE');
       const owner = ctx.db.prepare('SELECT role FROM users WHERE id = ?').get(s.user_id) as { role: string } | undefined;
       if (owner?.role === 'PLAYER') playerInScope(ctx, req.auth, s.user_id);
-      else if (req.auth.role === 'COACH') throw new ApiError('OUT_OF_SCOPE');
+      else if (isScopedStaff(req.auth.role)) throw new ApiError('OUT_OF_SCOPE');
     }
     return sessionDTO(s);
   });
@@ -92,7 +92,7 @@ export function gameRoutes(app: FastifyInstance, ctx: Ctx, g: Guards) {
       if (!req.auth.permissions.includes('VIEW_RESULTS')) throw new ApiError('OUT_OF_SCOPE');
       const owner = ctx.db.prepare('SELECT role FROM users WHERE id = ?').get(s.user_id) as { role: string } | undefined;
       if (owner?.role === 'PLAYER') playerInScope(ctx, req.auth, s.user_id);
-      else if (req.auth.role === 'COACH') throw new ApiError('OUT_OF_SCOPE');
+      else if (isScopedStaff(req.auth.role)) throw new ApiError('OUT_OF_SCOPE');
     }
     const rows = ctx.db
       .prepare('SELECT seq, rt_ms, correct, distractor, t_ms FROM hits WHERE session_id = ? ORDER BY seq')

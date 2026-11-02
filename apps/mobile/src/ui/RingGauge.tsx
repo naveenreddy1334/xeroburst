@@ -8,7 +8,7 @@ import { useReveal } from './motion';
 import { X } from './Bits';
 import { C } from '../theme/tokens';
 
-const RG: [string, string][] = [['#9BFB00', '#4A7900'], ['#D2FF7A', '#4A7900'], ['#D2FF7A', '#4A7900'], ['#D2FF7A', '#9BFB00'], ['#FFBD59', '#9BFB00']];
+const RG: [string, string][] = [['#DEB35C', '#8A6422'], ['#F3D48A', '#8A6422'], ['#F3D48A', '#8A6422'], ['#F3D48A', '#DEB35C'], ['#FFBD59', '#DEB35C']];
 
 export function RingGauge({ frac, ci = 0, v, dec = 0, unit, label, k }: { frac: number; ci?: number; v: number; dec?: number; unit?: string; label: string; k: string }) {
   const { u, tv } = useDevice();

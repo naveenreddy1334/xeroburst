@@ -10,6 +10,7 @@ import { useDevice } from '../../theme/device';
 export default function Home() {
   const { tv } = useDevice();
   const role = useAuth((s) => s.user?.role);
+  if (role === 'SUPER_ADMIN') return <Redirect href={'/business' as never} />; // the Super Admin lands on the business overview
   if (role === 'PLAYER') return <Redirect href={'/modules' as never} />; // Analytics is for coaches and above
   return (
     <Screen testID="screen-dashboard" scroll={!tv} fill={tv} maxWidth={100000}>

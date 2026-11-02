@@ -33,6 +33,8 @@ export interface UserDTO {
   inactive_reason?: string | null;
   /** The hub this person belongs to (Coach and Player; Admins have none) */
   hub?: HubRef | null;
+  /** The branch this person belongs to, when the hub has branches */
+  branch?: HubRef | null;
   /** Coaches only */
   players_count?: number;
   locked_until?: ISODate | null;
@@ -220,6 +222,7 @@ export interface PlayerHistoryRow {
 
 export interface PlayerListItem {
   hub?: HubRef | null;
+  branch?: HubRef | null;
   id: string;
   player_code: string;
   display_name: string;
@@ -479,4 +482,185 @@ export interface OrgPerformanceResponse {
   insights: Insight[];
   /** True when the figures cover only the players assigned to the signed-in Coach. */
   scoped: boolean;
+}
+
+
+// ---- Organization (hub -> academy -> branch) ------------------------------------------------------------------------
+export interface OrgPerson {
+  id: string;
+  name: string;
+  login_id: string;
+  active: boolean;
+}
+
+export interface OrgBranch {
+  id: string;
+  hub_id: string;
+  academy_id: string | null;
+  name: string;
+  city: string | null;
+  is_active: boolean;
+  managers: OrgPerson[];
+  coaches: OrgPerson[];
+  /** Counts only: the organization view carries no individual player data. */
+  players: number;
+  active_players: number;
+}
+
+export interface OrgAcademy {
+  id: string;
+  hub_id: string;
+  name: string;
+  is_active: boolean;
+  branches: OrgBranch[];
+  players: number;
+  coaches: number;
+}
+
+export interface OrgHub {
+  id: string;
+  name: string;
+  city: string | null;
+  is_active: boolean;
+  /** 'academies' when the hub has academies or branches, otherwise 'single' (coaches sit directly under the hub). */
+  structure: 'single' | 'academies';
+  managers: OrgPerson[];
+  academies: OrgAcademy[];
+  /** Branches that belong to the hub without an academy. */
+  branches: OrgBranch[];
+  /** Coaches assigned straight to the hub (no branch). */
+  direct_coaches: OrgPerson[];
+  players: number;
+  active_players: number;
+  coaches: number;
+}
+
+export interface OrgTree {
+  hubs: OrgHub[];
+  totals: { hubs: number; academies: number; branches: number; coaches: number; players: number; active_players: number };
+}
+
+// ---- Finance --------------------------------------------------------------------------------------------------------
+/** A figure is either known or it says why it is not. Zero and "not available" are different things. */
+export type FinanceMetric =
+  | { status: 'available'; value: number; currency: string }
+  | { status: 'not_configured'; value: null; note: string }
+  | { status: 'awaiting_rules'; value: null; note: string }
+  | { status: 'needs_history'; value: null; note: string };
+
+export interface FinanceRow {
+  level: 'hub' | 'academy' | 'branch' | 'direct';
+  hub: HubRef;
+  academy: { id: string; name: string } | null;
+  branch: { id: string; name: string } | null;
+  label: string;
+  players: number;
+  active_players: number;
+  coaches: number;
+  revenue: FinanceMetric;
+  expenses: FinanceMetric;
+  profit: FinanceMetric;
+  collection: FinanceMetric;
+  /** Change against the period before it, in percent. Only when that earlier period has recorded revenue. */
+  growth: FinanceMetric;
+}
+
+export interface FinanceSummary {
+  period: { kind: 'month' | 'quarter' | 'year'; from: string; to: string; label: string };
+  /** What the data model can do today. The page uses this to decide what to show as live. */
+  capabilities: { revenue: boolean; expenses: boolean; profit: boolean; collection: boolean; period_filter: boolean };
+  totals: {
+    hubs: number;
+    academies: number;
+    branches: number;
+    coaches: number;
+    players: number;
+    active_players: number;
+    revenue: FinanceMetric;
+    expenses: FinanceMetric;
+    profit: FinanceMetric;
+    revenue_per_player: FinanceMetric;
+    collection: FinanceMetric;
+    outstanding: FinanceMetric;
+    growth: FinanceMetric;
+    top_hub: { name: string; revenue: number } | null;
+    lowest_hub: { name: string; revenue: number } | null;
+  };
+  /** Revenue of the periods leading up to this one (oldest first). Empty until fees exist. Recorded figures only. */
+  trend: { label: string; long: string; revenue: number | null; expenses: number | null; profit: number | null; current: boolean }[];
+  rows: FinanceRow[];
+  /** Planned capabilities, shown as "coming" until their rules exist */
+  planned: { key: string; label: string; ready: boolean }[];
+}
+
+
+// ---- Fees, payments, streaks and targets -------------------------------------------------------------------------------
+export interface FeePlanDTO { id: string; name: string; amount: number; currency: string; is_active: boolean }
+export type PaymentMethod = 'upi' | 'card' | 'netbanking' | 'cash';
+export type PaymentStatus = 'paid' | 'pending' | 'failed' | 'refunded';
+export interface PaymentDTO {
+  id: string;
+  period: string;
+  amount: number;
+  currency: string;
+  method: PaymentMethod;
+  status: PaymentStatus;
+  reference: string | null;
+  paid_at: string | null;
+  created_at: string;
+}
+export interface BillingMonth {
+  period: string;
+  label: string;
+  due: number;
+  paid: number;
+  status: 'paid' | 'partial' | 'due' | 'overdue';
+}
+export interface BillingDTO {
+  player: { id: string; name: string };
+  plan: FeePlanDTO | null;
+  monthly_amount: number | null;
+  start_period: string | null;
+  currency: string;
+  summary: { billed: number; paid: number; outstanding: number };
+  months: BillingMonth[];
+  payments: PaymentDTO[];
+  methods: PaymentMethod[];
+  can_pay: boolean;
+  /** No real payment gateway is connected: payments are recorded by the app as soon as they are made. */
+  gateway: 'demo';
+}
+
+export interface TargetPoint { day: string; label: string; ghost: number; actual: number | null; projected: number | null }
+export interface TargetPeriod {
+  kind: 'week' | 'month';
+  start: string;
+  end: string;
+  label: string;
+  days: number;
+  elapsed_days: number;
+  target: number | null;
+  actual: number;
+  projected_total: number;
+  on_track: boolean | null;
+  series: TargetPoint[];
+  is_current: boolean;
+}
+export interface TargetHistoryItem { kind: 'week' | 'month'; start: string; label: string; target: number; actual: number; hit: boolean }
+export interface ProgressDTO {
+  player: { id: string; name: string };
+  period: TargetPeriod;
+  history: TargetHistoryItem[];
+  streak: {
+    current: number;
+    longest: number;
+    last14: { day: string; played: boolean }[];
+    /** the last 56 days, oldest first, with the rounds played on each */
+    last56: { day: string; rounds: number }[];
+    /** days played, and rounds, in the last 30 days */
+    active_30: number;
+    rounds_30: number;
+    total_rounds: number;
+  };
+  can_set: boolean;
 }

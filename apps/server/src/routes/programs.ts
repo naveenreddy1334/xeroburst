@@ -8,17 +8,18 @@ import type { Guards } from '../rbac/guard.js';
 import type { Actor } from '../rbac/guard.js';
 import { applyProgram } from '../services/access.js';
 import { createProgram, getProgram, listPrograms, writeStages } from '../services/programs.js';
+import { isScopedStaff } from '../rbac/scope.js';
 import { parse } from '../util/http.js';
 
 const idParam = z.object({ id: z.string().min(1).max(64) });
 
 export function programRoutes(app: FastifyInstance, ctx: Ctx, g: Guards) {
-  const visible = (actor: Actor, ownerId: string | null) => actor.role !== 'COACH' || ownerId === null || ownerId === actor.id;
+  const visible = (actor: Actor, ownerId: string | null) => !isScopedStaff(actor.role) || ownerId === null || ownerId === actor.id;
   /** Coaches edit only their own programs; Admins and Super Admins edit any. */
-  const editable = (actor: Actor, ownerId: string | null) => actor.role !== 'COACH' || ownerId === actor.id;
+  const editable = (actor: Actor, ownerId: string | null) => !isScopedStaff(actor.role) || ownerId === actor.id;
 
   app.get('/programs', { preHandler: g.need('MANAGE_PROGRAMS', 'VIEW_RESULTS') }, async (req) => ({
-    items: listPrograms(ctx, req.auth.role === 'COACH' ? req.auth.id : null),
+    items: listPrograms(ctx, isScopedStaff(req.auth.role) ? req.auth.id : null),
     next_cursor: null,
   }));
 
@@ -33,7 +34,7 @@ export function programRoutes(app: FastifyInstance, ctx: Ctx, g: Guards) {
   app.post('/programs', { preHandler: g.need('MANAGE_PROGRAMS') }, async (req, reply) => {
     const b = parse(programBody, req.body);
     // A Coach's program belongs to them. Admin programs are shared templates.
-    const isCoach = req.auth.role === 'COACH';
+    const isCoach = isScopedStaff(req.auth.role);
     const id = ctx.db.transaction(() =>
       createProgram(ctx, { ...b, is_template: isCoach ? false : (b.is_template ?? true) }, isCoach ? req.auth.id : null, req.auth.id),
     )();
@@ -50,7 +51,7 @@ export function programRoutes(app: FastifyInstance, ctx: Ctx, g: Guards) {
     ctx.db.transaction(() => {
       if (b.name !== undefined) ctx.db.prepare('UPDATE programs SET name = ? WHERE id = ?').run(b.name, id);
       if (b.retired !== undefined) ctx.db.prepare('UPDATE programs SET retired = ? WHERE id = ?').run(b.retired ? 1 : 0, id);
-      if (b.is_template !== undefined && req.auth.role !== 'COACH') {
+      if (b.is_template !== undefined && !isScopedStaff(req.auth.role)) {
         ctx.db.prepare('UPDATE programs SET is_template = ? WHERE id = ?').run(b.is_template ? 1 : 0, id);
       }
       if (b.stages) {

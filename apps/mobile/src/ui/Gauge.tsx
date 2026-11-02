@@ -13,7 +13,7 @@ import { useReveal } from './motion';
 import { Icon } from './Icon';
 import { Txt } from './Txt';
 
-const PAIRS: [string, string][] = [['#9BFB00', '#4A7900'], ['#D2FF7A', '#4A7900'], ['#FFBD59', '#9BFB00'], ['#D2FF7A', '#4A7900'], ['#D2FF7A', '#9BFB00']];
+const PAIRS: [string, string][] = [['#DEB35C', '#8A6422'], ['#F3D48A', '#8A6422'], ['#FFBD59', '#DEB35C'], ['#F3D48A', '#8A6422'], ['#F3D48A', '#DEB35C']];
 
 export interface GaugeProps {
   icon: IconName;

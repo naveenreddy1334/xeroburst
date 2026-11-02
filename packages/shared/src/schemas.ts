@@ -49,12 +49,13 @@ export const changePasswordBody = z.object({
 export const createUserBody = z.object({
   login_id: z.string().trim().toLowerCase().regex(LOGIN_ID_PATTERN, 'Use 3 to 32 letters, digits, dot, dash or underscore.'),
   display_name: personName,
-  role: z.enum(['ADMIN', 'COACH', 'PLAYER']),
+  role: z.enum(['ADMIN', 'HUB_MANAGER', 'BRANCH_MANAGER', 'COACH', 'PLAYER']),
   // Required for staff accounts (Coach, Admin). Players are created from the Players screen.
   email: emailField.optional(),
   phone: phoneField.optional(),
   age: staffAge.optional(),
   hub_id: idStr.nullable().optional(),
+  branch_id: idStr.nullable().optional(),
 }).superRefine((b, ctx) => {
   if (b.role === 'PLAYER') return;
   for (const [k, msg] of [['email', 'Email is required.'], ['phone', 'Phone is required.'], ['age', 'Age is required.']] as const) {
@@ -71,6 +72,7 @@ export const patchUserBody = z.object({
   reason: z.string().trim().max(300).optional(),
   role: z.enum(['ADMIN', 'COACH']).optional(),
   hub_id: idStr.nullable().optional(),
+  branch_id: idStr.nullable().optional(),
 });
 
 export const permissionsBody = z.object({
@@ -89,6 +91,7 @@ export const createPlayerBody = z.object({
   program_id: idStr.nullable().optional(),
   starting_games: z.array(gameSlug).max(4).optional(),
   hub_id: idStr.nullable().optional(),
+  branch_id: idStr.nullable().optional(),
 });
 
 export const patchPlayerBody = z.object({
@@ -99,6 +102,7 @@ export const patchPlayerBody = z.object({
   status: z.enum(['active', 'inactive']).optional(),
   reason: z.string().trim().max(300).optional(),
   hub_id: idStr.nullable().optional(),
+  branch_id: idStr.nullable().optional(),
 });
 
 export const resetPlayerBody = z.object({
@@ -192,3 +196,46 @@ export const hubPatchBody = hubBody.partial();
 export type CreatePlayerBody = z.infer<typeof createPlayerBody>;
 export type FinishSessionBody = z.infer<typeof finishSessionBody>;
 export type ProgramBody = z.infer<typeof programBody>;
+
+
+// Organization: academies and branches are optional levels under a hub.
+const orgName = z.string().trim().min(2, 'Give it a name (at least 2 characters).').max(80, 'Name is too long.');
+export const academyBody = z.object({ hub_id: idStr, name: orgName });
+export const academyPatchBody = z.object({ name: orgName.optional(), is_active: z.boolean().optional() });
+export const branchBody = z.object({
+  hub_id: idStr,
+  academy_id: idStr.nullable().optional(),
+  name: orgName,
+  city: z.string().trim().max(80).nullable().optional(),
+});
+export const branchPatchBody = z.object({
+  name: orgName.optional(),
+  city: z.string().trim().max(80).nullable().optional(),
+  academy_id: idStr.nullable().optional(),
+  is_active: z.boolean().optional(),
+});
+/** Put a staff member into a hub and, optionally, one of its branches. */
+export const assignBody = z.object({ user_id: idStr, hub_id: idStr.nullable(), branch_id: idStr.nullable().optional() });
+
+export const financePeriodQuery = z.object({
+  period: z.enum(['month', 'quarter', 'year']).default('month'),
+  /** Any date inside the period, YYYY-MM-DD. Defaults to today. */
+  on: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+  hub_id: idStr.optional(),
+});
+
+// ---- Fees, payments and targets ------------------------------------------------------------------------------------------
+export const feePlanBody = z.object({ name: z.string().trim().min(2, 'Enter a plan name.').max(40), amount: z.number().int('Whole rupees only.').min(0).max(1_000_000) });
+export const feePlanPatch = z.object({
+  name: z.string().trim().min(2).max(40).optional(),
+  amount: z.number().int().min(0).max(1_000_000).optional(),
+  is_active: z.boolean().optional(),
+});
+export const setFeeBody = z.object({ plan_id: idStr, start_period: z.string().regex(/^\d{4}-\d{2}$/).optional() });
+export const paymentBody = z.object({
+  method: z.enum(['upi', 'card', 'netbanking', 'cash']),
+  period: z.string().regex(/^\d{4}-\d{2}$/).optional(),
+  amount: z.number().int().positive().max(1_000_000).optional(),
+});
+export const progressQuery = z.object({ kind: z.enum(['week', 'month']).default('month'), offset: z.coerce.number().int().min(-24).max(0).default(0) });
+export const targetBody = z.object({ kind: z.enum(['week', 'month']), target_rounds: z.number().int('Whole rounds only.').min(1, 'Enter at least 1 round.').max(2000) });

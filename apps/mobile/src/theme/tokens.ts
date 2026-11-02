@@ -1,101 +1,101 @@
-// Design tokens. XeroBurst in Lime, Olive and Black: lime #9BFB00 for actions, active states and numbers, olive #4A7900
-// for fills and the end of gradients, black #010100 for the ground. Everything else is a tint of these, plus error red
+// Design tokens. XeroBurst in Gold Fade: gold #DEB35C for actions, active states and numbers, deep gold #8A6422
+// for fills and the end of gradients, black #0A0803 for the ground. Everything else is a tint of these, plus error red
 // and warning amber. Dark and light. Every screen reads colours through `C`, which resolves to the active theme when it is
 // read, so nothing else in the app needs to know which theme is on.
 
 export type ThemeMode = 'dark' | 'light';
 
 export const BRAND = {
-  primary: '#9BFB00',
-  highlight: '#9BFB00',
-  electric: '#4A7900',
-  blue: '#4A7900',
-  cyan: '#D2FF7A',
+  primary: '#DEB35C',
+  highlight: '#DEB35C',
+  electric: '#8A6422',
+  blue: '#8A6422',
+  cyan: '#F3D48A',
 } as const;
 
-/** Signature gradient: linear-gradient(110deg, #9BFB00 0%, #4A7900 100%) */
+/** Signature gradient: linear-gradient(110deg, #DEB35C 0%, #8A6422 100%) */
 export const GRADIENT = {
   angle: 110,
   stops: [
-    { offset: 0, color: '#9BFB00' },
-    { offset: 1, color: '#4A7900' },
+    { offset: 0, color: '#DEB35C' },
+    { offset: 1, color: '#8A6422' },
   ],
-  css: 'linear-gradient(110deg, #9BFB00 0%, #4A7900 100%)',
+  css: 'linear-gradient(110deg, #DEB35C 0%, #8A6422 100%)',
 } as const;
 
 type Palette = Record<'bg' | 'bg2' | 'surface' | 'surface2' | 'surface3' | 'border' | 'borderStrong' | 'text' | 'sub' | 'faint' | 'primary' | 'highlight' | 'primaryDim' | 'secondary' | 'electric' | 'blue' | 'cyan' | 'success' | 'warning' | 'danger' | 'locked' | 'lockedText' | 'onPrimary' | 'scrim' | 'glowA' | 'glowB' | 'tint' | 'tintHi' | 'idle' | 'navIdle' | 'grid', string>;
 
-/** Lime (#9BFB00), olive (#4A7900) and black (#010100). */
+/** Gold (#DEB35C), deep gold (#8A6422) and black (#0A0803). */
 const DARK: Palette = {
-  bg: '#010100',
-  bg2: '#050800',
-  surface: 'rgba(8,12,2,0.78)',
-  surface2: 'rgba(20,32,2,0.82)',
-  surface3: 'rgba(30,48,4,0.9)',
-  border: 'rgba(155,251,0,0.20)',
-  borderStrong: 'rgba(155,251,0,0.38)',
-  text: '#F3FAE6',
-  sub: '#A8BC85',
-  faint: '#8A9E6A',
+  bg: '#0A0803',
+  bg2: '#110D07',
+  surface: 'rgba(20,16,9,0.78)',
+  surface2: 'rgba(32,26,14,0.82)',
+  surface3: 'rgba(44,34,16,0.9)',
+  border: 'rgba(222,179,92,0.20)',
+  borderStrong: 'rgba(222,179,92,0.38)',
+  text: '#F7F3EA',
+  sub: '#B9AA86',
+  faint: '#9A8C68',
   primary: BRAND.primary,
   highlight: BRAND.highlight,
-  primaryDim: 'rgba(155,251,0,0.18)',
+  primaryDim: 'rgba(222,179,92,0.18)',
   secondary: BRAND.cyan,
   electric: BRAND.electric,
   blue: BRAND.blue,
   cyan: BRAND.cyan,
-  success: '#9BFB00',
-  warning: '#FFBD59',
+  success: '#8FD18A',
+  warning: '#FF9A4D',
   danger: '#FF5263',
-  locked: '#4F5640',
-  lockedText: '#8A9E6A',
+  locked: '#574D38',
+  lockedText: '#9A8C68',
   /** text on lime fills: black */
-  onPrimary: '#010100',
+  onPrimary: '#0A0803',
   scrim: 'rgba(0,0,0,0.8)',
-  glowA: 'rgba(155,251,0,0.20)',
-  glowB: 'rgba(74,121,0,0.14)',
+  glowA: 'rgba(222,179,92,0.20)',
+  glowB: 'rgba(138,100,34,0.14)',
   tint: 'rgba(255,255,255,0.05)',
-  tintHi: 'rgba(155,251,0,0.12)',
-  idle: '#DDF2B8',
-  navIdle: '#7C8666',
-  grid: 'rgba(155,251,0,0.09)',
+  tintHi: 'rgba(222,179,92,0.12)',
+  idle: '#F1E2BC',
+  navIdle: '#8A7E5E',
+  grid: 'rgba(222,179,92,0.09)',
 };
 
 
 /** Light theme: pale lime-tinted paper, black text, olive for text and icons on paper, lime for fills. */
 const LIGHT: Palette = {
-  bg: '#EEF6DC',
-  bg2: '#E3EFC8',
+  bg: '#F6EFDC',
+  bg2: '#EDE2C4',
   surface: 'rgba(255,255,255,0.94)',
   surface2: '#FFFFFF',
-  surface3: '#F2F8E4',
-  border: 'rgba(40,70,0,0.20)',
-  borderStrong: 'rgba(40,70,0,0.40)',
-  text: '#0B1400',
-  sub: '#364618',
-  faint: '#53643A',
+  surface3: '#F9F3E2',
+  border: 'rgba(90,64,18,0.20)',
+  borderStrong: 'rgba(90,64,18,0.40)',
+  text: '#140E04',
+  sub: '#4A3A18',
+  faint: '#6B5A34',
   primary: BRAND.primary,
   /** brand colour for text and icons on paper: the lime is too light to read there, so the dark olive is used */
-  highlight: '#3C6200',
-  primaryDim: 'rgba(74,121,0,0.14)',
-  secondary: '#4A7900',
+  highlight: '#7A5516',
+  primaryDim: 'rgba(138,100,34,0.14)',
+  secondary: '#8A6422',
   electric: BRAND.electric,
   blue: BRAND.blue,
-  cyan: '#4A7900',
+  cyan: '#8A6422',
   success: '#2F6B00',
   warning: '#8A5600',
   danger: '#C21842',
-  locked: '#B9C7A0',
-  lockedText: '#53643A',
-  onPrimary: '#010100',
-  scrim: 'rgba(10,20,0,0.5)',
-  glowA: 'rgba(155,251,0,0.22)',
-  glowB: 'rgba(74,121,0,0.10)',
-  tint: 'rgba(40,70,0,0.07)',
-  tintHi: 'rgba(40,70,0,0.14)',
-  idle: '#2A3A10',
-  navIdle: '#53643A',
-  grid: 'rgba(40,70,0,0.16)',
+  locked: '#D3C69F',
+  lockedText: '#6B5A34',
+  onPrimary: '#0A0803',
+  scrim: 'rgba(20,14,4,0.5)',
+  glowA: 'rgba(222,179,92,0.22)',
+  glowB: 'rgba(138,100,34,0.10)',
+  tint: 'rgba(90,64,18,0.07)',
+  tintHi: 'rgba(90,64,18,0.14)',
+  idle: '#3A2A0C',
+  navIdle: '#6B5A34',
+  grid: 'rgba(90,64,18,0.16)',
 };
 
 const PALETTES: Record<ThemeMode, Palette> = { dark: DARK, light: LIGHT };
@@ -115,8 +115,8 @@ export const C = {} as Readonly<Palette>;
 
 /** Game accents come from the same palette so the whole app reads as one brand. */
 const ACCENTS = {
-  dark: { quick: '#9BFB00', memory: '#D2FF7A', hunt: '#FFBD59', endure: '#FF5263' },
-  light: { quick: '#4A7900', memory: '#6E9400', hunt: '#8A5600', endure: '#C21842' },
+  dark: { quick: '#DEB35C', memory: '#F3D48A', hunt: '#6FC3E8', endure: '#FF5263' },
+  light: { quick: '#8A6422', memory: '#A8802F', hunt: '#2F7FA3', endure: '#C21842' },
 };
 export const GAME_ACCENT = {} as Readonly<(typeof ACCENTS)['dark']>;
 (Object.keys(ACCENTS.dark) as (keyof (typeof ACCENTS)['dark'])[]).forEach((k) => {
@@ -125,8 +125,8 @@ export const GAME_ACCENT = {} as Readonly<(typeof ACCENTS)['dark']>;
 
 /** Chart and accent line colours: bright lime on dark, dark olive on light paper. Read at render time like `C`. */
 const INKS = {
-  dark: { line: '#9BFB00', line2: '#D2FF7A', fill: 'rgba(155,251,0,.20)', fill2: 'rgba(210,255,122,.10)' },
-  light: { line: '#3C6200', line2: '#6E9400', fill: 'rgba(60,98,0,.18)', fill2: 'rgba(110,148,0,.10)' },
+  dark: { line: '#DEB35C', line2: '#F3D48A', fill: 'rgba(222,179,92,.20)', fill2: 'rgba(243,212,138,.10)' },
+  light: { line: '#7A5516', line2: '#A8802F', fill: 'rgba(122,85,22,.18)', fill2: 'rgba(168,128,47,.10)' },
 };
 export const INK = {} as Readonly<(typeof INKS)['dark']>;
 (Object.keys(INKS.dark) as (keyof (typeof INKS)['dark'])[]).forEach((k) => {
@@ -188,8 +188,8 @@ export const neo = (depth: 'card' | 'chip' = 'card'): object => {
     const dark = getThemeMode() === 'dark';
     return {
       boxShadow: dark
-        ? `inset 1px 1px 0 rgba(210,255,122,0.10), inset -1px -1px 0 rgba(0,0,0,0.35), -3px -3px 12px rgba(155,251,0,0.04), ${big ? '8px 14px 28px -8px' : '4px 8px 16px -6px'} rgba(0,0,0,0.7)`
-        : `inset 1px 1px 0 rgba(255,255,255,0.9), 0 ${big ? '10px 28px -10px' : '6px 16px -8px'} rgba(40,70,0,0.28)`,
+        ? `inset 1px 1px 0 rgba(243,212,138,0.10), inset -1px -1px 0 rgba(0,0,0,0.35), -3px -3px 12px rgba(222,179,92,0.04), ${big ? '8px 14px 28px -8px' : '4px 8px 16px -6px'} rgba(0,0,0,0.7)`
+        : `inset 1px 1px 0 rgba(255,255,255,0.9), 0 ${big ? '10px 28px -10px' : '6px 16px -8px'} rgba(90,64,18,0.28)`,
     };
   }
   return { shadowColor: '#000', shadowOpacity: getThemeMode() === 'dark' ? 0.5 : 0.18, shadowRadius: big ? 16 : 10, shadowOffset: { width: 0, height: big ? 8 : 5 }, elevation: big ? 6 : 3 };

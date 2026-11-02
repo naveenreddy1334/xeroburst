@@ -6,7 +6,7 @@ import { pbsFor, streakFor, userAnalytics, overview, activity } from '../service
 import type { Ctx } from '../ctx.js';
 import { ApiError } from '../errors.js';
 import type { Guards } from '../rbac/guard.js';
-import { playerInScope, scopeSql } from '../rbac/scope.js';
+import { isScopedStaff, playerInScope, scopeSql, userScopeSql } from '../rbac/scope.js';
 import { gamesForUser } from '../services/games.js';
 import { playerProgram } from '../services/programs.js';
 import { sessionDTO, loadSession } from '../services/sessions.js';
@@ -135,8 +135,9 @@ export function resultRoutes(app: FastifyInstance, ctx: Ctx, g: Guards) {
   // and the "vs average" comparison, so both use the same numbers.
   app.get('/analytics/board', { preHandler: g.need('VIEW_RESULTS') }, async (req) => {
     const q = parse(z.object({ game: z.enum(GAME_SLUGS) }), req.query);
-    const hubSql = req.auth.role === 'COACH' && req.auth.hub_id ? ' AND u.hub_id = ?' : '';
-    const hubArgs = hubSql ? [req.auth.hub_id as string] : [];
+    const us = userScopeSql(req.auth, 'u');
+    const hubSql = us.sql;
+    const hubArgs = us.params;
     const rows = ctx.db
       .prepare(
         `SELECT u.id, u.display_name, p.player_code, s.summary_json, s.started_at
@@ -178,7 +179,7 @@ export function resultRoutes(app: FastifyInstance, ctx: Ctx, g: Guards) {
       if (!req.auth.permissions.includes('VIEW_RESULTS')) throw new ApiError('OUT_OF_SCOPE');
       const owner = ctx.db.prepare('SELECT role FROM users WHERE id = ?').get(s.user_id) as { role: string } | undefined;
       if (owner?.role === 'PLAYER') playerInScope(ctx, req.auth, s.user_id);
-      else if (req.auth.role === 'COACH') throw new ApiError('OUT_OF_SCOPE');
+      else if (isScopedStaff(req.auth.role)) throw new ApiError('OUT_OF_SCOPE');
     }
     return insightsForSessionId(ctx, s.user_id, id);
   });

@@ -21,8 +21,8 @@ function shade(hex: string, f: number): string {
 }
 
 export const POSTER_COLORS: Record<string, [string, string]> = {
-  quick: ['#9BFB00', '#0f1c00'],
-  memory: ['#D2FF7A', '#1a2400'],
+  quick: ['#DEB35C', '#1a1305'],
+  memory: ['#F3D48A', '#241a08'],
   hunt: ['#FFBD59', '#2e2008'],
   endure: ['#FF5263', '#2e0f14'],
 };

@@ -16,6 +16,7 @@ export interface Actor {
   grants: Permission[];
   must_change: boolean;
   hub_id: string | null;
+  branch_id: string | null;
   sid: string;
 }
 
@@ -38,6 +39,7 @@ interface UserRow {
   must_change_password: number;
   is_active: number;
   hub_id: string | null;
+  branch_id: string | null;
 }
 
 export function loadGrants(ctx: Ctx, userId: string): Permission[] {
@@ -57,7 +59,7 @@ export function makeGuards(ctx: Ctx) {
     }
     // The server loads the user on every request, so deactivation, a reset or a role change bites at once.
     const u = ctx.db
-      .prepare('SELECT id, login_id, display_name, role, token_version, must_change_password, is_active, hub_id FROM users WHERE id = ?')
+      .prepare('SELECT id, login_id, display_name, role, token_version, must_change_password, is_active, hub_id, branch_id FROM users WHERE id = ?')
       .get(payload.sub ?? '') as UserRow | undefined;
     if (!u || !u.is_active || u.token_version !== payload.tv) throw new ApiError('AUTH_REQUIRED');
     const sess = ctx.db
@@ -75,6 +77,7 @@ export function makeGuards(ctx: Ctx) {
       permissions: permissionsFor(u.role, grants),
       must_change: !!u.must_change_password,
       hub_id: u.hub_id ?? null,
+      branch_id: u.branch_id ?? null,
       sid: payload.sid!,
     };
     if (req.auth.must_change && !req.routeOptions.config?.allowMustChange) {

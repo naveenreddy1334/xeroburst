@@ -38,7 +38,7 @@ export default function Forgot() {
         {done ? (
           <>
             <X c={C.sub} style={{ marginBottom: u * 0.75 }}>
-              {done === 'player' ? 'Your request was sent to your coach. They will give you a new PIN.' : 'Ask your Super Admin or Admin to reset your password. They can issue a new one from the Coaches or Admins page.'}
+              {done === 'player' ? 'Your request was sent to your coach. They will give you a new PIN.' : 'Ask your Super Admin, Hub Admin or Branch Admin to reset your password. They can issue a new one from the Coaches page.'}
             </X>
             <Button label="Back to sign in" full onPress={() => router.replace('/login')} />
           </>

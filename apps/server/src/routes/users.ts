@@ -17,10 +17,10 @@ import { generateTempPassword, hashSecret } from '../auth/password.js';
 import { clearLock } from '../auth/lockout.js';
 import type { Guards } from '../rbac/guard.js';
 import type { Actor } from '../rbac/guard.js';
-import { assertCanManage } from '../rbac/scope.js';
+import { assertCanManage, inOrgScope, orgScope, userScopeSql } from '../rbac/scope.js';
 import { USER_COLS, userDTO } from '../services/users.js';
 import type { UserRow } from '../services/users.js';
-import { hubExists } from '../services/hubs.js';
+import { placementFor } from '../services/org.js';
 import { newId } from '../db/seed.js';
 import { parse, pagingQuery } from '../util/http.js';
 import { invalidateTokens, revokeAllSessions } from './auth.js';
@@ -35,17 +35,21 @@ export function userRoutes(app: FastifyInstance, ctx: Ctx, g: Guards) {
     const t = load(id);
     if (!t || t.role === 'PLAYER') throw notFound('User');
     assertCanManage(actor, t.role);
+    // Rank is not enough: a Hub or Branch Manager only reaches staff inside their own hub or branch.
+    if (orgScope(actor).kind !== 'all' && !inOrgScope(actor, { hub_id: t.hub_id ?? null, branch_id: t.branch_id ?? null })) throw new ApiError('OUT_OF_SCOPE');
     return t;
   }
 
   const manageableRoles = (actor: Actor): Role[] =>
-    (['SUPER_ADMIN', 'ADMIN', 'COACH'] as Role[]).filter(
-      (r) => r !== 'SUPER_ADMIN' && outranks(actor.role, r) && (r === 'ADMIN' ? can(actor, 'MANAGE_ADMINS') : can(actor, 'MANAGE_COACHES')),
+    (['ADMIN', 'HUB_MANAGER', 'BRANCH_MANAGER', 'COACH'] as Role[]).filter(
+      (r) =>
+        outranks(actor.role, r) &&
+        (r === 'ADMIN' ? can(actor, 'MANAGE_ADMINS') : r === 'HUB_MANAGER' ? can(actor, 'MANAGE_HUBS') : r === 'BRANCH_MANAGER' ? can(actor, 'MANAGE_ORG') : can(actor, 'MANAGE_COACHES')),
     );
 
   app.get('/users', { preHandler: g.need('MANAGE_COACHES', 'MANAGE_ADMINS') }, async (req) => {
     const q = parse(
-      pagingQuery.extend({ role: z.enum(['ADMIN', 'COACH']).optional(), q: z.string().max(60).optional(), active: z.enum(['0', '1']).optional() }),
+      pagingQuery.extend({ role: z.enum(['ADMIN', 'HUB_MANAGER', 'BRANCH_MANAGER', 'COACH']).optional(), q: z.string().max(60).optional(), active: z.enum(['0', '1']).optional() }),
       req.query,
     );
     const allowed = manageableRoles(req.auth);
@@ -53,6 +57,10 @@ export function userRoutes(app: FastifyInstance, ctx: Ctx, g: Guards) {
     if (!roles.length) return { items: [], next_cursor: null };
     const where = [`role IN (${roles.map(() => '?').join(',')})`];
     const params: (string | number)[] = [...roles];
+    const us = userScopeSql(req.auth, 'users');
+    const scopeWhere = us.sql ? [us.sql.replace(/^ AND /, '')] : [];
+    where.push(...scopeWhere);
+    params.push(...us.params);
     if (q.q) {
       where.push('(display_name LIKE ? OR login_id LIKE ?)');
       params.push(`%${q.q}%`, `%${q.q}%`);
@@ -81,16 +89,29 @@ export function userRoutes(app: FastifyInstance, ctx: Ctx, g: Guards) {
     if (ctx.db.prepare('SELECT 1 FROM users WHERE login_id = ?').get(b.login_id)) {
       throw conflict('That login ID is already taken.', { field: 'login_id' });
     }
-    const hubId = b.role === 'COACH' ? (b.hub_id ?? null) : null;
-    if (hubId && !hubExists(ctx, hubId)) throw new ApiError('VALIDATION', { fields: { hub_id: 'Choose an active hub.' } });
+    // Where the new account sits. A manager or a Coach creator can only place people inside their own hub or branch.
+    let place: { hub_id: string | null; branch_id: string | null } = { hub_id: null, branch_id: null };
+    if (b.role === 'COACH' || b.role === 'HUB_MANAGER' || b.role === 'BRANCH_MANAGER') {
+      const sc = orgScope(req.auth);
+      let hubWanted = b.hub_id ?? null;
+      let branchWanted = b.branch_id ?? null;
+      if (sc.kind === 'hub') hubWanted = hubWanted ?? req.auth.hub_id;
+      if (sc.kind === 'branch') {
+        // Default to their own branch, but never quietly override a different one that was asked for.
+        hubWanted = hubWanted ?? req.auth.hub_id;
+        branchWanted = branchWanted ?? req.auth.branch_id;
+      }
+      place = placementFor(ctx, req.auth, b.role, hubWanted, branchWanted);
+    }
+    const hubId = place.hub_id;
     const temp = generateTempPassword();
     const id = `u_${newId()}`;
     ctx.db
       .prepare(
-        `INSERT INTO users (id, login_id, display_name, role, password_hash, must_change_password, is_active, created_by, created_at, email, phone, age, hub_id)
-         VALUES (?,?,?,?,?,1,1,?,?,?,?,?,?)`,
+        `INSERT INTO users (id, login_id, display_name, role, password_hash, must_change_password, is_active, created_by, created_at, email, phone, age, hub_id, branch_id)
+         VALUES (?,?,?,?,?,1,1,?,?,?,?,?,?,?)`,
       )
-      .run(id, b.login_id, b.display_name, b.role, await hashSecret(temp, ctx.hashN), req.auth.id, new Date().toISOString(), b.email ?? null, b.phone ?? null, b.age ?? null, hubId);
+      .run(id, b.login_id, b.display_name, b.role, await hashSecret(temp, ctx.hashN), req.auth.id, new Date().toISOString(), b.email ?? null, b.phone ?? null, b.age ?? null, hubId, place.branch_id);
     auditReq(ctx.db, req, 'USER_CREATED', 'user', id, { role: b.role, login_id: b.login_id });
     const out: CreatedStaffResponse = { user: userDTO(ctx, load(id)!), temp_password: temp };
     reply.code(201).send(out);
@@ -117,9 +138,13 @@ export function userRoutes(app: FastifyInstance, ctx: Ctx, g: Guards) {
       if (b.email !== undefined) ctx.db.prepare('UPDATE users SET email = ? WHERE id = ?').run(b.email, id);
       if (b.phone !== undefined) ctx.db.prepare('UPDATE users SET phone = ? WHERE id = ?').run(b.phone, id);
       if (b.age !== undefined) ctx.db.prepare('UPDATE users SET age = ? WHERE id = ?').run(b.age, id);
-      if (b.hub_id !== undefined && t.role === 'COACH') {
-        if (b.hub_id && !hubExists(ctx, b.hub_id)) throw new ApiError('VALIDATION', { fields: { hub_id: 'Choose an active hub.' } });
-        ctx.db.prepare('UPDATE users SET hub_id = ? WHERE id = ?').run(b.hub_id, id);
+      if ((b.hub_id !== undefined || b.branch_id !== undefined) && (t.role === 'COACH' || t.role === 'HUB_MANAGER' || t.role === 'BRANCH_MANAGER')) {
+        const hubWanted = b.hub_id !== undefined ? b.hub_id : (t.hub_id ?? null);
+        // Moving to another hub clears the branch unless a new one is named.
+        const branchWanted = b.branch_id !== undefined ? b.branch_id : b.hub_id !== undefined && b.hub_id !== (t.hub_id ?? null) ? null : (t.branch_id ?? null);
+        const place = placementFor(ctx, req.auth, t.role, hubWanted, branchWanted);
+        ctx.db.prepare('UPDATE users SET hub_id = ?, branch_id = ? WHERE id = ?').run(place.hub_id, place.branch_id, id);
+        invalidateTokens(ctx, id);
       }
       if (b.role !== undefined && b.role !== t.role) {
         ctx.db.prepare('UPDATE users SET role = ? WHERE id = ?').run(b.role, id);

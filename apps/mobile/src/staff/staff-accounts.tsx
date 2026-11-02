@@ -3,11 +3,11 @@
 // Kept from before: edit details, revoke sessions, role change and the "can create coaches" grant.
 
 import { useMemo, useState } from 'react';
-import { View } from 'react-native';
+import { Pressable, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useMutation } from '@tanstack/react-query';
 import { LOGIN_ID_PATTERN, ROLE_LABEL, canCreateRole, canManageRole } from '@nboard/shared';
-import type { CreatedStaffResponse, HubDTO, Permission, Role, UserDTO } from '@nboard/shared';
+import type { CreatedStaffResponse, HubDTO, Page, Permission, PlayerListItem, Role, UserDTO } from '@nboard/shared';
 import { Screen } from '../ui/Screen';
 import { Header } from '../ui/Header';
 import { Card } from '../ui/Card';
@@ -68,7 +68,7 @@ function Inner({ role, title, noun, backPath }: Props) {
   return (
     <Screen refreshing={list.isRefetching && !list.isFetchingNextPage} onRefresh={() => void list.refetch()} testID={`screen-${role.toLowerCase()}s`} maxWidth={100000}>
       <Header
-        eyebrow={role === 'COACH' ? 'Super Admin and Admin' : 'Super Admin only'}
+        eyebrow={role === 'COACH' ? 'Super Admin, Hub Admin and Branch Admin' : 'Super Admin only'}
         title={title}
         subtitle="Name, email, phone and age are required. No weight is needed."
         right={canCreate ? <Button label={`New ${noun}`} onPress={() => setCreating(!creating)} /> : undefined}
@@ -100,6 +100,33 @@ function Inner({ role, title, noun, backPath }: Props) {
       )}
       {list.hasNextPage ? <Button label="Load more" variant="secondary" loading={list.isFetchingNextPage} onPress={() => void list.fetchNextPage()} /> : null}
     </Screen>
+  );
+}
+
+/** The players a coach looks after: name, ID, age and status. Tap one to open their profile (fees, streak and goal; results stay with the coach). */
+function CoachPlayers({ coachId }: { coachId: string }) {
+  const { u } = useDevice();
+  const router = useRouter();
+  const [open, setOpen] = useState(false);
+  const list = useGet<Page<PlayerListItem>>('/players', { coach: coachId, limit: 100 }, { enabled: open });
+  const items = list.data?.items ?? [];
+  return (
+    <View style={{ marginTop: u * 0.75 }}>
+      <Button size="sm" variant="secondary" label={open ? 'Hide players' : 'Players'} onPress={() => setOpen(!open)} />
+      {open ? (
+        <View style={{ marginTop: u * 0.5 }}>
+          {list.isLoading ? <LoadingBlock label="Loading players" /> : list.isError ? <ErrorBlock error={list.error} onRetry={() => void list.refetch()} /> : items.length === 0 ? <Empty>No players with this coach yet.</Empty> : items.map((p) => (
+            <Pressable key={p.id} accessibilityRole="button" accessibilityLabel={`Open ${p.display_name}`} onPress={() => router.push(`/players/${p.id}` as never)} style={{ flexDirection: 'row', alignItems: 'center', gap: u * 0.5, paddingVertical: u * 0.5, borderTopWidth: 1, borderTopColor: C.border }}>
+              <View style={{ flex: 1, minWidth: 0 }}>
+                <X s={0.92} w="b" numberOfLines={1}>{p.display_name}</X>
+                <X s={0.75} c={C.faint}>{p.player_code.toUpperCase()}{p.age != null ? ` · age ${p.age}` : ''}</X>
+              </View>
+              <Pill t={p.status === 'active' ? 'good' : 'off'}>{p.status === 'active' ? 'Active' : 'Inactive'}</Pill>
+            </Pressable>
+          ))}
+        </View>
+      ) : null}
+    </View>
   );
 }
 
@@ -146,6 +173,7 @@ function AccountCard({ u: acct, noun, readOnly, canGrant, canChangeRole, backPat
         <Pill t={acct.is_active ? 'good' : 'off'}>{acct.is_active ? 'Active' : 'Inactive'}</Pill>
       </View>
       {acct.role === 'COACH' ? <View style={{ marginTop: u * 0.5, flexDirection: 'row' }}><Pill>{acct.hub ? acct.hub.name : 'No hub yet'}</Pill></View> : null}
+      {acct.role === 'COACH' ? <CoachPlayers coachId={acct.id} /> : null}
       <View style={{ marginTop: u * 0.75 }}>
         <X s={0.9} c={C.sub} style={{ lineHeight: u * 1.4 * 0.9 * 1.4 }}>{acct.email ?? 'no email on file'}</X>
         <X s={0.9} c={C.sub} style={{ lineHeight: u * 1.4 * 0.9 * 1.4 }}>{acct.phone ?? 'no phone on file'} · age {acct.age ?? '--'}</X>

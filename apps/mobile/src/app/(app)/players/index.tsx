@@ -6,7 +6,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { Pressable, TextInput, View, useWindowDimensions } from 'react-native';
 import Svg, { Defs, LinearGradient, Rect, Stop } from 'react-native-svg';
 import { useRouter } from 'expo-router';
-import { GAMES, GAME_SLUGS } from '@nboard/shared';
+import { GAMES, GAME_SLUGS, ROLE_LABEL } from '@nboard/shared';
 import type { AccessItem, CreatedPlayerResponse, HubDTO, Page, PerformanceResponse, PlayerDetail, PlayerListItem, ProgramDTO, ResetPlayerResponse, UserDTO } from '@nboard/shared';
 import { C, INK } from '../../../theme/tokens';
 import { glassLo, neoIn } from '../../../theme/surfaces';
@@ -37,10 +37,10 @@ import { Icon } from '../../../ui/Icon';
 import { toast } from '../../../ui/Toast';
 import { useAction } from '../../../staff/players-common';
 
-const ROLE: Record<string, string> = { SUPER_ADMIN: 'Super Admin', ADMIN: 'Admin', COACH: 'Coach', PLAYER: 'Player' };
+const ROLE: Record<string, string> = ROLE_LABEL;
 const WEEK = 7 * 86_400_000;
 
-/** from-[#9BFB00]/30 to-[#4A7900]/20, left to right. */
+/** from-[#DEB35C]/30 to-[#8A6422]/20, left to right. */
 function SoftSelected() {
   return (
     <View pointerEvents="none" style={{ position: 'absolute', left: 0, right: 0, top: 0, bottom: 0 }}>
@@ -48,7 +48,7 @@ function SoftSelected() {
         <Defs>
           <LinearGradient id="ps" x1="0" y1="0" x2="1" y2="0">
             <Stop offset="0" stopColor={INK.line} stopOpacity={0.3} />
-            <Stop offset="1" stopColor="#4A7900" stopOpacity={0.2} />
+            <Stop offset="1" stopColor="#8A6422" stopOpacity={0.2} />
           </LinearGradient>
         </Defs>
         <Rect x="0" y="0" width="100%" height="100%" fill="url(#ps)" />
@@ -222,7 +222,7 @@ function Training({ p, perm }: { p: PlayerDetail; perm: { access: boolean; progr
           return (
             <View key={a.game} style={[{ flexDirection: 'row', alignItems: 'center', gap: u * 0.75, borderRadius: u * 1.25, paddingHorizontal: u, paddingVertical: u * 0.625 }, glassLo()]}>
               <X s={1} w="b" style={{ flex: 1 }} numberOfLines={1}>{info.name}</X>
-              <Pressable accessibilityRole="button" accessibilityLabel={`${info.name} ${open ? 'open' : 'locked'}`} disabled={!perm.access && !perm.progress} onPress={() => void act.run('acc' + a.game, () => api.put(`/players/${p.id}/access/${a.game}`, { state: open ? 'locked' : 'unlocked' }), open ? `${info.name} locked` : `${info.name} unlocked`)} style={{ borderRadius: 999, paddingHorizontal: u * 0.75, paddingVertical: u * 0.25, backgroundColor: open ? 'rgba(155,251,0,.12)' : C.tint }}>
+              <Pressable accessibilityRole="button" accessibilityLabel={`${info.name} ${open ? 'open' : 'locked'}`} disabled={!perm.access && !perm.progress} onPress={() => void act.run('acc' + a.game, () => api.put(`/players/${p.id}/access/${a.game}`, { state: open ? 'locked' : 'unlocked' }), open ? `${info.name} locked` : `${info.name} unlocked`)} style={{ borderRadius: 999, paddingHorizontal: u * 0.75, paddingVertical: u * 0.25, backgroundColor: open ? 'rgba(222,179,92,.12)' : C.tint }}>
                 <X s={0.72} w="b" c={open ? C.success : C.faint}>{open ? 'Open' : 'Locked'}</X>
               </Pressable>
               <Select label={`Level cap ${info.name}`} w={u * 5.4} h={u * 2.5} value={String(cap)} options={lv} disabled={!perm.access} onChange={(v) => void act.run('cap' + a.game, () => api.put(`/players/${p.id}/access/${a.game}`, { level_cap: +v >= info.maxLevel ? null : +v }), 'Level cap saved.')} />

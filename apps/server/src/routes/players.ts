@@ -20,13 +20,14 @@ import { generatePin, hashSecret } from '../auth/password.js';
 import { clearLock } from '../auth/lockout.js';
 import type { Guards } from '../rbac/guard.js';
 import type { Actor } from '../rbac/guard.js';
-import { playerInScope, scopeSql } from '../rbac/scope.js';
+import { inOrgScope, isScopedStaff, playerInScope, scopeSql } from '../rbac/scope.js';
 import { PLAYER_LIST_SQL, playerDetail, playerListItem } from '../services/users.js';
 import { accessItems, applyProgram, ensureAccessRows, setAccess } from '../services/access.js';
 import { gameBySlug } from '../services/games.js';
 import { getProgram, playerProgram } from '../services/programs.js';
 import { newId } from '../db/seed.js';
 import { hubExists } from '../services/hubs.js';
+import { branchHub } from '../services/org.js';
 import { pagingQuery, parse } from '../util/http.js';
 import { invalidateTokens } from './auth.js';
 
@@ -38,15 +39,16 @@ export function playerRoutes(app: FastifyInstance, ctx: Ctx, g: Guards) {
   function usableProgram(actor: Actor, programId: string) {
     const p = getProgram(ctx, programId);
     if (!p) throw notFound('Program');
-    if (actor.role === 'COACH' && p.owner_id !== null && p.owner_id !== actor.id) throw new ApiError('OUT_OF_SCOPE');
+    if (isScopedStaff(actor.role) && p.owner_id !== null && p.owner_id !== actor.id) throw new ApiError('OUT_OF_SCOPE');
     return p;
   }
 
-  function activeCoach(id: string) {
-    const c = ctx.db.prepare(`SELECT id, display_name FROM users WHERE id = ? AND role = 'COACH' AND is_active = 1`).get(id) as
-      | { id: string; display_name: string }
+  function activeCoach(id: string, actor?: Actor) {
+    const c = ctx.db.prepare(`SELECT id, display_name, hub_id, branch_id FROM users WHERE id = ? AND role = 'COACH' AND is_active = 1`).get(id) as
+      | { id: string; display_name: string; hub_id: string | null; branch_id: string | null }
       | undefined;
     if (!c) throw new ApiError('VALIDATION', { fields: { coach_id: 'Choose an active Coach.' } });
+    if (actor && !inOrgScope(actor, c)) throw new ApiError('OUT_OF_SCOPE');
     return c;
   }
 
@@ -58,6 +60,7 @@ export function playerRoutes(app: FastifyInstance, ctx: Ctx, g: Guards) {
         status: z.enum(['active', 'inactive']).optional(),
         coach: z.string().max(64).optional(),
         hub: z.string().max(64).optional(),
+        branch: z.string().max(64).optional(),
       }),
       req.query,
     );
@@ -76,6 +79,10 @@ export function playerRoutes(app: FastifyInstance, ctx: Ctx, g: Guards) {
       where.push('u.hub_id = ?');
       params.push(q.hub);
     }
+    if (q.branch) {
+      where.push('u.branch_id = ?');
+      params.push(q.branch);
+    }
     if (q.coach) {
       where.push('p.coach_id = ?');
       params.push(q.coach);
@@ -91,23 +98,42 @@ export function playerRoutes(app: FastifyInstance, ctx: Ctx, g: Guards) {
   app.post('/players', { preHandler: g.need('MANAGE_PLAYERS') }, async (req, reply) => {
     const b = parse(createPlayerBody, req.body);
     let coachId: string;
+    let coach: { hub_id: string | null; branch_id: string | null } | null = null;
     if (req.auth.role === 'COACH') {
       if (b.coach_id && b.coach_id !== req.auth.id) throw new ApiError('OUT_OF_SCOPE');
       coachId = req.auth.id;
     } else {
       if (!b.coach_id) throw new ApiError('VALIDATION', { fields: { coach_id: 'Choose a Coach for this player.' } });
-      coachId = activeCoach(b.coach_id).id;
+      const c = activeCoach(b.coach_id, req.auth);
+      coachId = c.id;
+      coach = c;
     }
     if (b.pin) {
       const bad = validatePin(b.pin);
       if (bad) throw new ApiError('VALIDATION', { fields: { pin: bad } });
     }
-    // The hub: a Coach's players join the Coach's hub; an Admin or Super Admin picks one (default: the chosen Coach's hub).
+    // The hub and branch. A Coach's players join the Coach's own hub and branch. A Hub or Branch Manager's players stay inside
+    // their own part of the organization. An Admin or Super Admin picks one (default: the chosen Coach's).
     let hubId: string | null;
-    if (req.auth.role === 'COACH') hubId = req.auth.hub_id;
-    else if (b.hub_id !== undefined) hubId = b.hub_id;
-    else hubId = (ctx.db.prepare('SELECT hub_id FROM users WHERE id = ?').get(coachId) as { hub_id: string | null }).hub_id;
+    let branchId: string | null;
+    if (req.auth.role === 'COACH') {
+      hubId = req.auth.hub_id;
+      branchId = req.auth.branch_id;
+    } else if (req.auth.role === 'BRANCH_MANAGER') {
+      hubId = req.auth.hub_id;
+      branchId = req.auth.branch_id;
+    } else if (req.auth.role === 'HUB_MANAGER') {
+      hubId = req.auth.hub_id;
+      branchId = b.branch_id !== undefined ? b.branch_id : (coach?.branch_id ?? null);
+    } else {
+      hubId = b.hub_id !== undefined ? b.hub_id : (coach?.hub_id ?? null);
+      branchId = b.branch_id !== undefined ? b.branch_id : b.hub_id !== undefined ? null : (coach?.branch_id ?? null);
+    }
     if (hubId && !hubExists(ctx, hubId)) throw new ApiError('VALIDATION', { fields: { hub_id: 'Choose an active hub.' } });
+    if (branchId) {
+      const bh = branchHub(ctx, branchId);
+      if (!bh || bh !== hubId) throw new ApiError('VALIDATION', { fields: { branch_id: 'Choose a branch of this hub.' } });
+    }
     const program = b.program_id ? usableProgram(req.auth, b.program_id) : null;
     const pin = b.pin ?? generatePin(isSimplePin);
     const hash = await hashSecret(pin, ctx.hashN);
@@ -120,10 +146,10 @@ export function playerRoutes(app: FastifyInstance, ctx: Ctx, g: Guards) {
       code = `NB-${String(next).padStart(4, '0')}`;
       ctx.db
         .prepare(
-          `INSERT INTO users (id, login_id, display_name, role, password_hash, must_change_password, is_active, created_by, created_at, hub_id)
-           VALUES (?,?,?,'PLAYER',?,1,1,?,?,?)`,
+          `INSERT INTO users (id, login_id, display_name, role, password_hash, must_change_password, is_active, created_by, created_at, hub_id, branch_id)
+           VALUES (?,?,?,'PLAYER',?,1,1,?,?,?,?)`,
         )
-        .run(id, code.toLowerCase(), b.display_name, hash, req.auth.id, now, hubId);
+        .run(id, code.toLowerCase(), b.display_name, hash, req.auth.id, now, hubId, branchId);
       ctx.db
         .prepare('INSERT INTO player_profiles (user_id, player_code, coach_id, age, weight_kg, notes, status) VALUES (?,?,?,?,?,?,?)')
         .run(id, code, coachId, b.age, b.weight_kg, b.notes ?? null, 'active');
@@ -162,9 +188,21 @@ export function playerRoutes(app: FastifyInstance, ctx: Ctx, g: Guards) {
       if (b.display_name !== undefined) ctx.db.prepare('UPDATE users SET display_name = ? WHERE id = ?').run(b.display_name, id);
       const set = (col: string, v: unknown) => ctx.db.prepare(`UPDATE player_profiles SET ${col} = ? WHERE user_id = ?`).run(v, id);
       if (b.hub_id !== undefined) {
-        if (req.auth.role === 'COACH') throw new ApiError('FORBIDDEN', undefined, 'Only an Admin can move a player to another hub.');
+        if (req.auth.role !== 'SUPER_ADMIN' && req.auth.role !== 'ADMIN') throw new ApiError('FORBIDDEN', undefined, 'Only an Admin can move a player to another hub.');
         if (b.hub_id && !hubExists(ctx, b.hub_id)) throw new ApiError('VALIDATION', { fields: { hub_id: 'Choose an active hub.' } });
-        ctx.db.prepare('UPDATE users SET hub_id = ? WHERE id = ?').run(b.hub_id, id);
+        ctx.db.prepare('UPDATE users SET hub_id = ?, branch_id = NULL WHERE id = ?').run(b.hub_id, id);
+      }
+      if (b.branch_id !== undefined) {
+        // A Hub Manager moves players between branches of their hub; an Admin or Super Admin between any branches of the player's hub.
+        if (req.auth.role !== 'SUPER_ADMIN' && req.auth.role !== 'ADMIN' && req.auth.role !== 'HUB_MANAGER') {
+          throw new ApiError('FORBIDDEN', undefined, 'Only a Hub Manager or Admin can move a player to another branch.');
+        }
+        const cur = ctx.db.prepare('SELECT hub_id FROM users WHERE id = ?').get(id) as { hub_id: string | null };
+        if (b.branch_id) {
+          const bh = branchHub(ctx, b.branch_id);
+          if (!bh || bh !== cur.hub_id) throw new ApiError('VALIDATION', { fields: { branch_id: 'Choose a branch of the player\'s hub.' } });
+        }
+        ctx.db.prepare('UPDATE users SET branch_id = ? WHERE id = ?').run(b.branch_id, id);
       }
       if (b.age !== undefined) set('age', b.age);
       if (b.weight_kg !== undefined) set('weight_kg', b.weight_kg);

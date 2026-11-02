@@ -9,7 +9,8 @@ import { C } from '../../../theme/tokens';
 import { useDevice } from '../../../theme/device';
 import { api } from '../../../lib/api';
 import { useGet } from '../../../lib/queries';
-import { useCan } from '../../../state/auth';
+import { useAuth, useCan } from '../../../state/auth';
+import { BillingCard, ProgressPanels } from '../../../ui/PlayerPanels';
 import { useCredentials } from '../../../state/ui';
 import { LineChart } from '../../../charts/Charts';
 import { RequirePermission } from '../../../ui/RequirePermission';
@@ -452,6 +453,8 @@ function Profile() {
   const router = useRouter();
   const { tv } = useDevice();
   const can = useCan();
+  // The Super Admin has no Players list (players live inside coach cards), so back goes to Coaches.
+  const home = useAuth((s) => s.user?.role) === 'SUPER_ADMIN' ? '/coaches' : '/players';
   const act = useAction(['/players', '/programs']);
   const { run, busy, fields } = act;
 
@@ -503,7 +506,7 @@ function Profile() {
   const p = q.data;
   return (
     <Screen refreshing={refreshing} onRefresh={() => void refresh()} testID="screen-player">
-      <Header title={p?.display_name ?? 'Player'} subtitle={p?.player_code} back="/players" />
+      <Header title={p?.display_name ?? 'Player'} subtitle={p?.player_code} back={home} />
       {tv ? <TvNotice /> : null}
       {q.isLoading ? (
         <LoadingBlock label="Loading player" />
@@ -542,6 +545,10 @@ function Profile() {
               </View>
             ) : null}
           </Card>
+
+          <SectionTitle>Streak, goal and fees</SectionTitle>
+          <ProgressPanels playerId={String(id)} />
+          <BillingCard playerId={String(id)} />
 
           <PerformanceSection id={String(id)} name={p.display_name} />
           <ResultsSection id={String(id)} />

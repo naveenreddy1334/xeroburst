@@ -46,6 +46,13 @@ async function connect(ticket: string): Promise<Conn> {
 }
 
 async function open(token: string, game: string, level: number) {
+  // The board is released a moment after the previous test's socket closes. On a slower machine the next test can start inside that
+  // moment and be refused, so wait (up to 5 s) until the board shows as free before asking for a session.
+  for (let i = 0; i < 50; i++) {
+    const st = await env.req('GET', '/board/status', tok.coach);
+    if (st.body.busy === false) break;
+    await new Promise((r) => setTimeout(r, 100));
+  }
   const id = sid();
   const r = await env.req('POST', '/sessions', token, { id, game, level, transport: 'bridge' });
   return { id, res: r, ticket: r.body.board_ticket as string };

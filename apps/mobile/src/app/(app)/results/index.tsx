@@ -48,7 +48,7 @@ function Glow() {
 function Row({ cells, widths, on, odd, onPress, head }: { cells: React.ReactNode[]; widths: number[]; on?: boolean; odd?: boolean; onPress?: () => void; head?: boolean }) {
   const { u } = useDevice();
   const inner = (
-    <View style={[{ flexDirection: 'row', alignItems: 'center', gap: u * 0.5, paddingHorizontal: u * 0.75, paddingVertical: head ? u * 0.5 : u * 0.625, borderRadius: u }, on ? ({ backgroundColor: C.tintHi, boxShadow: 'inset 0 0 0 1px rgba(210,255,122,.3)' } as never) : odd ? { backgroundColor: C.tint } : null]}>
+    <View style={[{ flexDirection: 'row', alignItems: 'center', gap: u * 0.5, paddingHorizontal: u * 0.75, paddingVertical: head ? u * 0.5 : u * 0.625, borderRadius: u }, on ? ({ backgroundColor: C.tintHi, boxShadow: 'inset 0 0 0 1px rgba(243,212,138,.3)' } as never) : odd ? { backgroundColor: C.tint } : null]}>
       {cells.map((c, i) => <View key={i} style={{ flex: widths[i], minWidth: 0 }}>{c}</View>)}
     </View>
   );
