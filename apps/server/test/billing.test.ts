@@ -171,3 +171,63 @@ describe('streak and target', () => {
     expect((await env.req('PUT', `/players/${ids.isha}/target`, tok.co, { kind: 'month', target_rounds: 40 })).status).toBeGreaterThanOrEqual(403);
   });
 });
+
+describe('the payment log', () => {
+  it('lists every payment for the Super Admin, newest first, with the player, hub and who took it', async () => {
+    const r = await env.req('GET', '/finance/payments?limit=10', tok.sa);
+    expect(r.status, JSON.stringify(r.body)).toBe(200);
+    expect(r.body.total).toBeGreaterThan(10);
+    expect(r.body.total_amount).toBeGreaterThan(0);
+    expect(r.body.items.length).toBe(10);
+    const it = r.body.items[0];
+    expect(it.player_name).toBeTruthy();
+    expect(it.hub_name).toBeTruthy();
+    const dates = r.body.items.map((x: { paid_at: string }) => x.paid_at);
+    expect([...dates].sort().reverse()).toEqual(dates);
+  });
+
+  it('a payment made now shows up at the top, with the player as the one who took it', async () => {
+    const p = await env.req('POST', `/players/${ids.kabir}/payments`, tok.kabir, { method: 'upi' });
+    expect([201, 422]).toContain(p.status);
+    if (p.status === 201) {
+      const r = await env.req('GET', '/finance/payments?limit=1', tok.sa);
+      expect(r.body.items[0].id).toBe(p.body.payment.id);
+      expect(r.body.items[0].method).toBe('upi');
+      expect(r.body.items[0].recorded_by_self).toBe(true);
+    }
+  });
+
+  it('filters by method and by name, and the total follows the filter', async () => {
+    const cash = await env.req('GET', '/finance/payments?method=cash&limit=100', tok.sa);
+    expect(cash.status).toBe(200);
+    expect(cash.body.items.every((x: { method: string }) => x.method === 'cash')).toBe(true);
+    expect(cash.body.total).toBe(cash.body.items.length);
+    const named = await env.req('GET', `/finance/payments?q=${encodeURIComponent('Kabir')}&limit=100`, tok.sa);
+    expect(named.body.items.length).toBeGreaterThan(0);
+    expect(named.body.items.every((x: { player_name: string }) => x.player_name.includes('Kabir'))).toBe(true);
+    const none = await env.req('GET', '/finance/payments?q=zzzznobody', tok.sa);
+    expect(none.body.total).toBe(0);
+  });
+
+  it('pages through the log', async () => {
+    const a = await env.req('GET', '/finance/payments?limit=5&offset=0', tok.sa);
+    const b = await env.req('GET', '/finance/payments?limit=5&offset=5', tok.sa);
+    expect(a.body.items[0].id).not.toBe(b.body.items[0].id);
+  });
+
+  it('lets a player pay a coming month in advance, but not a far-off or invalid one', async () => {
+    const b = (await env.req('GET', `/players/${ids.kabir}/billing`, tok.kabir)).body;
+    const now = b.months[0].period as string;
+    const next = (n: number) => { const d = new Date(Date.UTC(Number(now.slice(0, 4)), Number(now.slice(5, 7)) - 1 + n, 1)); return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}`; };
+    const ok = await env.req('POST', `/players/${ids.kabir}/payments`, tok.kabir, { method: 'upi', period: next(1) });
+    expect(ok.status).toBe(201);
+    expect(ok.body.payment.period).toBe(next(1));
+    expect((await env.req('POST', `/players/${ids.kabir}/payments`, tok.kabir, { method: 'upi', period: next(1) })).status).toBe(422);
+    expect((await env.req('POST', `/players/${ids.kabir}/payments`, tok.kabir, { method: 'upi', period: next(30) })).status).toBe(422);
+  });
+
+  it('is for the Super Admin only', async () => {
+    expect((await env.req('GET', '/finance/payments', tok.hm)).status).toBe(403);
+    expect((await env.req('GET', '/finance/payments', tok.kabir)).status).toBeGreaterThanOrEqual(403);
+  });
+});

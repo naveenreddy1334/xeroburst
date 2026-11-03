@@ -217,6 +217,17 @@ export const branchPatchBody = z.object({
 /** Put a staff member into a hub and, optionally, one of its branches. */
 export const assignBody = z.object({ user_id: idStr, hub_id: idStr.nullable(), branch_id: idStr.nullable().optional() });
 
+export const paymentLogQuery = z.object({
+  limit: z.coerce.number().int().min(1).max(100).default(25),
+  offset: z.coerce.number().int().min(0).default(0),
+  hub_id: idStr.optional(),
+  method: z.enum(['upi', 'card', 'netbanking', 'cash']).optional(),
+  /** a month, YYYY-MM: payments made for that month */
+  period: z.string().regex(/^\d{4}-\d{2}$/).optional(),
+  /** part of a player's name or login */
+  q: z.string().trim().max(60).optional(),
+});
+
 export const financePeriodQuery = z.object({
   period: z.enum(['month', 'quarter', 'year']).default('month'),
   /** Any date inside the period, YYYY-MM-DD. Defaults to today. */

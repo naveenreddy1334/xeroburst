@@ -22,9 +22,9 @@ function shade(hex: string, f: number): string {
 
 export const POSTER_COLORS: Record<string, [string, string]> = {
   quick: ['#DEB35C', '#1a1305'],
-  memory: ['#F3D48A', '#241a08'],
-  hunt: ['#FFBD59', '#2e2008'],
-  endure: ['#FF5263', '#2e0f14'],
+  memory: ['#F6DE9E', '#241a08'],
+  hunt: ['#C8963A', '#26190a'],
+  endure: ['#E9B04A', '#2a1c07'],
 };
 
 interface Props {

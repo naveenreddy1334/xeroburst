@@ -16,6 +16,7 @@ import { RequirePermission } from '../../ui/RequirePermission';
 import { Screen } from '../../ui/Screen';
 import { Header } from '../../ui/Header';
 import { Card } from '../../ui/Card';
+import { PaymentLog } from '../../ui/PaymentLog';
 import { CardH, Empty, Pill, Seg, X } from '../../ui/Bits';
 import { ErrorBlock, LoadingBlock } from '../../ui/States';
 
@@ -149,6 +150,7 @@ function FinanceScreen() {
             <Metric label="Growth" m={d.totals.growth} hint="Same days in the period before" />
           </View>
           <PlansCard />
+          <PaymentLog hubs={hubRows.map((h) => ({ id: h.hub.id, name: h.label }))} />
           <Card>
             <CardH em="tap a hub to drill down">Revenue by organization</CardH>
             <View style={{ flexDirection: 'row', gap: u * 0.5, paddingBottom: u * 0.375 }}>

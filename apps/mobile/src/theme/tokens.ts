@@ -115,8 +115,8 @@ export const C = {} as Readonly<Palette>;
 
 /** Game accents come from the same palette so the whole app reads as one brand. */
 const ACCENTS = {
-  dark: { quick: '#DEB35C', memory: '#F3D48A', hunt: '#6FC3E8', endure: '#FF5263' },
-  light: { quick: '#8A6422', memory: '#A8802F', hunt: '#2F7FA3', endure: '#C21842' },
+  dark: { quick: '#DEB35C', memory: '#F6DE9E', hunt: '#C8963A', endure: '#E9B04A' },
+  light: { quick: '#8A6422', memory: '#A8802F', hunt: '#7A5516', endure: '#96691C' },
 };
 export const GAME_ACCENT = {} as Readonly<(typeof ACCENTS)['dark']>;
 (Object.keys(ACCENTS.dark) as (keyof (typeof ACCENTS)['dark'])[]).forEach((k) => {

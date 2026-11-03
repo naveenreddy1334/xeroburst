@@ -609,6 +609,38 @@ export interface PaymentDTO {
   paid_at: string | null;
   created_at: string;
 }
+/** One line of the Super Admin payment log: who paid, for which month, how, and who recorded it. */
+export interface PaymentLogItem {
+  id: string;
+  player_id: string;
+  player_name: string;
+  player_login: string;
+  hub_id: string | null;
+  hub_name: string | null;
+  branch_id: string | null;
+  branch_name: string | null;
+  period: string;
+  amount: number;
+  currency: string;
+  method: PaymentMethod;
+  status: PaymentStatus;
+  reference: string | null;
+  paid_at: string | null;
+  created_at: string;
+  /** who took the payment: the player (online) or the staff member who recorded cash */
+  recorded_by_name: string | null;
+  recorded_by_self: boolean;
+}
+export interface PaymentLogDTO {
+  items: PaymentLogItem[];
+  /** payments matching the filters (not just this page) */
+  total: number;
+  /** rupees paid across everything matching the filters */
+  total_amount: number;
+  limit: number;
+  offset: number;
+}
+
 export interface BillingMonth {
   period: string;
   label: string;

@@ -8,7 +8,7 @@
 //          so the card says that plainly.
 
 import { useEffect, useState } from 'react';
-import { View } from 'react-native';
+import { ScrollView, View, useWindowDimensions } from 'react-native';
 import type { LayoutChangeEvent } from 'react-native';
 import Svg, { Circle, Line, Path, Text as SvgText } from 'react-native-svg';
 import type { BillingDTO, FeePlanDTO, PaymentMethod, ProgressDTO, TargetPeriod } from '@nboard/shared';
@@ -23,6 +23,7 @@ import { useAction } from '../staff/players-common';
 import { Card } from './Card';
 import { Button } from './Button';
 import { Field } from './Field';
+import { Dialog } from './Dialog';
 import { CardH, Empty, Facts, Pill, RoundChip, Seg, X } from './Bits';
 import { ErrorBlock, LoadingBlock } from './States';
 
@@ -51,7 +52,12 @@ export function StreakCard({ p }: { p: ProgressDTO }) {
   const cells: ({ day: string; rounds: number } | null)[] = [...Array(lead).fill(null), ...days];
   while (cells.length % 7) cells.push(null);
   const weeks = Array.from({ length: cells.length / 7 }, (_, i) => cells.slice(i * 7, i * 7 + 7));
-  const cell = Math.max(18, u * 1.45);
+  const [gw, setGw] = useState(0);
+  const gap = u * 0.25;
+  const labelW = u * 1.2;
+  // cells grow to fill the card width (capped so a TV does not get giant blocks)
+  const fit = gw > 0 ? (gw - labelW - u * 0.4 * weeks.length - 1) / weeks.length : 0;
+  const cell = gw > 0 ? Math.max(18, Math.min(fit, u * 2.6)) : Math.max(18, u * 1.45);
   const today = days[days.length - 1]!.day;
 
   return (
@@ -89,12 +95,12 @@ export function StreakCard({ p }: { p: ProgressDTO }) {
       </View>
 
       <X s={0.72} up c={C.faint} style={{ marginTop: u * 0.9, marginBottom: u * 0.4 }}>Last 8 weeks</X>
-      <View style={{ flexDirection: 'row', gap: u * 0.4 }} accessibilityLabel={`Last 8 weeks: ${days.filter((d) => d.rounds > 0).length} days played`}>
-        <View style={{ gap: u * 0.25 }}>
+      <View onLayout={(e: LayoutChangeEvent) => setGw(Math.round(e.nativeEvent.layout.width))} style={{ flexDirection: 'row', gap: u * 0.4 }} accessibilityLabel={`Last 8 weeks: ${days.filter((d) => d.rounds > 0).length} days played`}>
+        <View style={{ gap: gap, width: labelW }}>
           {WEEKDAYS.map((w, i) => <View key={i} style={{ height: cell, justifyContent: 'center' }}><X s={0.7} c={C.faint}>{w}</X></View>)}
         </View>
         {weeks.map((col, wi) => (
-          <View key={wi} style={{ gap: u * 0.25 }}>
+          <View key={wi} style={{ gap }}>
             {col.map((d, di) => (
               <View
                 key={di}
@@ -297,13 +303,88 @@ const MONTH_PILL: Record<string, { t: 'good' | 'warn' | 'off' | ''; text: string
   overdue: { t: 'warn', text: 'Overdue' },
 };
 
+/** One payment, laid out the same everywhere: amount and month on the left, date, method and reference under it, status on the right. */
+function PaymentRow({ p, first }: { p: BillingDTO['payments'][number]; first: boolean }) {
+  const { u } = useDevice();
+  const month = monthName(p.period);
+  return (
+    <View style={{ flexDirection: 'row', alignItems: 'center', gap: u * 0.75, paddingVertical: u * 0.6, borderTopWidth: first ? 0 : 1, borderTopColor: C.border }}>
+      <View style={{ width: u * 2.6, height: u * 2.6, borderRadius: u * 0.8, alignItems: 'center', justifyContent: 'center', backgroundColor: C.tintHi }}>
+        <X s={0.72} w="b" c={C.highlight}>{month.slice(0, 3).toUpperCase()}</X>
+      </View>
+      <View style={{ flex: 1, minWidth: 0 }}>
+        <X s={0.95} w="b" num numberOfLines={1}>{rupees(p.amount)} <X s={0.82} c={C.sub}>for {month}</X></X>
+        <X s={0.74} c={C.faint} numberOfLines={2}>{fmtFull(p.paid_at ?? p.created_at)} · {METHOD_LABEL[p.method]}{p.reference ? ` · ${p.reference}` : ''}</X>
+      </View>
+      <Pill t={p.status === 'paid' ? 'good' : 'warn'}>{p.status === 'paid' ? 'Paid' : p.status}</Pill>
+    </View>
+  );
+}
+
+const MONTH_NAMES = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+const monthName = (ym: string) => `${MONTH_NAMES[Number(ym.slice(5, 7)) - 1] ?? ym} ${ym.slice(0, 4)}`;
+
+/** Payment history in its own window: payments grouped by year with the year's total, and the month by month list on a second tab. */
+function HistoryDialog({ b, visible, onClose }: { b: BillingDTO; visible: boolean; onClose: () => void }) {
+  const { u } = useDevice();
+  const { height } = useWindowDimensions();
+  const [tab, setTab] = useState<'payments' | 'months'>('payments');
+  const [shown, setShown] = useState(12);
+  const paid = b.payments.filter((p) => p.status === 'paid');
+  const years = new Map<string, typeof b.payments>();
+  for (const p of b.payments.slice(0, shown)) {
+    const y = (p.paid_at ?? p.created_at).slice(0, 4);
+    years.set(y, [...(years.get(y) ?? []), p]);
+  }
+  const yearTotal = (y: string) => paid.filter((p) => (p.paid_at ?? p.created_at).slice(0, 4) === y).reduce((a, p) => a + p.amount, 0);
+  return (
+    <Dialog visible={visible} title="Payment history" cancelLabel="Close" onCancel={onClose} maxWidth={620}>
+      <View style={{ gap: u * 0.75 }}>
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: u * 0.5 }}>
+          <Seg<'payments' | 'months'> items={[['payments', 'Payments'], ['months', 'Month by month']]} value={tab} onChange={setTab} />
+          <X s={0.8} c={C.sub} num>{paid.length} {paid.length === 1 ? 'payment' : 'payments'} · {rupees(b.summary.paid)} paid</X>
+        </View>
+        <ScrollView style={{ maxHeight: Math.max(240, height * 0.5) }} showsVerticalScrollIndicator={false}>
+          {tab === 'payments' ? (
+            b.payments.length === 0 ? <Empty>No payments yet.</Empty> : (
+              <View>
+                {[...years.entries()].map(([y, list]) => (
+                  <View key={y} style={{ marginBottom: u * 0.5 }}>
+                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: u * 0.4 }}>
+                      <X s={0.78} up w="b" c={C.faint}>{y}</X>
+                      <X s={0.78} c={C.faint} num>{rupees(yearTotal(y))} this year</X>
+                    </View>
+                    {list.map((p, i) => <PaymentRow key={p.id} p={p} first={i === 0} />)}
+                  </View>
+                ))}
+                {b.payments.length > shown ? <Button size="sm" variant="ghost" label={`Show more (${b.payments.length - shown} older)`} onPress={() => setShown(shown + 12)} /> : null}
+              </View>
+            )
+          ) : (
+            <View>
+              {b.months.map((m, i) => (
+                <View key={m.period} style={{ flexDirection: 'row', alignItems: 'center', gap: u * 0.5, paddingVertical: u * 0.5, borderTopWidth: i ? 1 : 0, borderTopColor: C.border }}>
+                  <X s={0.9} style={{ flex: 1, minWidth: 0 }} numberOfLines={1}>{m.label}</X>
+                  <X s={0.85} num c={C.sub}>{rupees(m.paid)} / {rupees(m.due)}</X>
+                  <Pill t={MONTH_PILL[m.status]?.t ?? ''}>{MONTH_PILL[m.status]?.text ?? m.status}</Pill>
+                </View>
+              ))}
+            </View>
+          )}
+        </ScrollView>
+      </View>
+    </Dialog>
+  );
+}
+
+/** Fees at a glance with the actions as buttons: Pay now, Payment history, Change plan. Each opens its own window, so the card stays short. */
 export function BillingCard({ playerId }: { playerId: string }) {
   const { u } = useDevice();
   const me = useAuth((s) => s.user);
   const self = me?.id === playerId;
   const q = useGet<BillingDTO>(`/players/${playerId}/billing`);
   const [method, setMethod] = useState<PaymentMethod>('upi');
-  const [showAll, setShowAll] = useState(false);
+  const [dlg, setDlg] = useState<null | 'pay' | 'history' | 'plan'>(null);
   const canPlan = !self && !!me && ['SUPER_ADMIN', 'ADMIN', 'HUB_MANAGER', 'BRANCH_MANAGER'].includes(me.role);
   const plans = useGet<{ items: FeePlanDTO[] }>('/fee-plans', undefined, { enabled: canPlan });
   const act = useAction([`/players/${playerId}`, '/finance']);
@@ -311,72 +392,100 @@ export function BillingCard({ playerId }: { playerId: string }) {
   const owing = b?.months.filter((m) => m.paid < m.due) ?? [];
   const oldest = owing[owing.length - 1];
   const methods: PaymentMethod[] = self ? ['upi', 'card', 'netbanking'] : (b?.methods ?? []);
+  const last = b?.payments.find((p) => p.status === 'paid');
+  const payLabel = self ? 'Pay now' : 'Record payment';
+  // Months a payment can be made for: everything owing (oldest first) and the next three months, paid in advance.
+  const nowYm = b?.months[0]?.period;
+  const ahead = (n: number) => { const t = new Date(Date.UTC(Number(nowYm!.slice(0, 4)), Number(nowYm!.slice(5, 7)) - 1 + n, 1)); return `${t.getUTCFullYear()}-${String(t.getUTCMonth() + 1).padStart(2, '0')}`; };
+  const options: { period: string; label: string; amount: number; advance: boolean }[] = !b || !nowYm || b.monthly_amount === null ? [] : [
+    ...[...owing].reverse().slice(0, 6).map((m) => ({ period: m.period, label: m.label, amount: m.due - m.paid, advance: false })),
+    ...[1, 2, 3].map((n) => ({ period: ahead(n), label: monthName(ahead(n)), amount: b.monthly_amount!, advance: true })),
+  ];
+  const [pick, setPick] = useState<string | null>(null);
+  const chosen = options.find((o) => o.period === pick) ?? options[0];
 
   async function pay() {
-    if (!oldest) return;
-    const r = await act.run('pay', () => api.post(`/players/${playerId}/payments`, { method, period: oldest.period }), `Paid ${rupees(oldest.due - oldest.paid)} for ${oldest.label}.`);
-    void r;
+    if (!chosen) return;
+    const r = await act.run('pay', () => api.post(`/players/${playerId}/payments`, { method, period: chosen.period }), `${self ? 'Paid' : 'Recorded'} ${rupees(chosen.amount)} for ${chosen.label}.`);
+    if (r.ok) { setDlg(null); setPick(null); }
   }
 
   return (
     <Card>
       <CardH em={b?.plan ? `${b.plan.name} · ${rupees(b.monthly_amount ?? 0)} a month` : undefined}>Fees and payments</CardH>
       {q.isLoading ? <LoadingBlock label="Loading fees" /> : q.isError || !b ? <ErrorBlock error={q.error} onRetry={() => void q.refetch()} /> : (
-        <View style={{ gap: u * 0.75 }}>
+        <View style={{ gap: u * 0.9 }}>
           {!b.plan ? (
             <Empty>No fee plan has been set for {self ? 'you' : 'this player'} yet.</Empty>
           ) : (
             <>
-              <Facts items={[['Paid so far', rupees(b.summary.paid)], ['Outstanding', rupees(b.summary.outstanding)], ['Billed since', b.start_period ? (b.months[b.months.length - 1]?.label ?? b.start_period) : '--'], ['Plan', b.plan.name]]} />
-              {oldest && b.can_pay ? (
-                <View style={[{ borderRadius: u, padding: u * 0.75, gap: u * 0.5 }, glassLo()]}>
-                  <X s={0.95} w="b">{oldest.label}: {rupees(oldest.due - oldest.paid)} to pay</X>
-                  <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: u * 0.5 }}>
-                    {methods.map((m) => <RoundChip key={m} label={METHOD_LABEL[m]} on={method === m} onPress={() => setMethod(m)} />)}
+              {oldest ? (
+                <View style={[{ borderRadius: u, padding: u * 0.9, flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: u * 0.6 }, glassLo()]}>
+                  <View style={{ flex: 1, flexBasis: u * 10, minWidth: 0 }}>
+                    <X s={0.74} up c={C.faint}>Due now</X>
+                    <X s={1.6} w="x" num>{rupees(oldest.due - oldest.paid)}</X>
+                    <X s={0.82} c={C.sub}>for {oldest.label}{owing.length > 1 ? ` · ${owing.length - 1} more month${owing.length > 2 ? 's' : ''} after it` : ''}</X>
                   </View>
-                  <Button label={`Pay ${rupees(oldest.due - oldest.paid)} with ${METHOD_LABEL[method]}`} loading={act.busy === 'pay'} onPress={() => void pay()} disabled={!methods.includes(method)} />
-                  <X s={0.72} c={C.faint}>Demo payments: no real payment gateway is connected, so no money moves. The payment is recorded in XeroBurst straight away.</X>
+                  {b.can_pay ? <Button label={payLabel} icon="wallet" onPress={() => setDlg('pay')} /> : null}
                 </View>
-              ) : b.summary.outstanding === 0 ? <Pill t="good">All paid up</Pill> : null}
-              <View>
-                <X s={0.72} up c={C.faint} style={{ marginBottom: u * 0.25 }}>Months</X>
-                {b.months.slice(0, showAll ? undefined : 6).map((m) => (
-                  <View key={m.period} style={{ flexDirection: 'row', alignItems: 'center', gap: u * 0.5, paddingVertical: u * 0.4, borderTopWidth: 1, borderTopColor: C.border }}>
-                    <X s={0.88} style={{ flex: 1, minWidth: 0 }} numberOfLines={1}>{m.label}</X>
-                    <X s={0.85} num c={C.sub}>{rupees(m.paid)} / {rupees(m.due)}</X>
-                    <Pill t={MONTH_PILL[m.status]!.t}>{MONTH_PILL[m.status]!.text}</Pill>
-                  </View>
-                ))}
-              </View>
-            </>
-          )}
-          {canPlan ? (
-            <View style={{ gap: u * 0.4 }}>
-              <X s={0.72} up c={C.faint}>{b.plan ? 'Change plan' : 'Choose a plan'}</X>
-              {plans.isLoading ? <LoadingBlock label="Loading plans" /> : !(plans.data?.items.length) ? <X s={0.8} c={C.warning}>No fee plans exist yet. The Super Admin adds them under Finance.</X> : (
-                <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: u * 0.5 }}>
-                  {plans.data.items.filter((p) => p.is_active).map((p) => (
-                    <RoundChip key={p.id} label={`${p.name} ${rupees(p.amount)}`} on={b.plan?.id === p.id} onPress={() => { if (b.plan?.id !== p.id) void act.run('plan' + p.id, () => api.put(`/players/${playerId}/fee`, { plan_id: p.id }), `Plan set to ${p.name}.`); }} />
-                  ))}
+              ) : (
+                <View style={[{ borderRadius: u, padding: u * 0.9, flexDirection: 'row', alignItems: 'center', gap: u * 0.6 }, glassLo()]}>
+                  <Pill t="good">All paid up</Pill>
+                  {last ? <X s={0.8} c={C.sub} style={{ flex: 1, minWidth: 0 }} numberOfLines={2}>Last payment {rupees(last.amount)} on {fmtFull(last.paid_at ?? last.created_at)}</X> : <View style={{ flex: 1 }} />}
+                  {b.can_pay ? <Button label={self ? 'Make a payment' : 'Record payment'} icon="wallet" onPress={() => setDlg('pay')} /> : null}
                 </View>
               )}
-            </View>
-          ) : null}
-          <View>
-            <X s={0.72} up c={C.faint} style={{ marginBottom: u * 0.25 }}>Payment history</X>
-            {b.payments.length === 0 ? <Empty>No payments yet.</Empty> : b.payments.slice(0, showAll ? undefined : 5).map((p) => (
-              <View key={p.id} style={{ flexDirection: 'row', alignItems: 'center', gap: u * 0.5, paddingVertical: u * 0.45, borderTopWidth: 1, borderTopColor: C.border }}>
-                <View style={{ flex: 1, minWidth: 0 }}>
-                  <X s={0.88} w="b" numberOfLines={1}>{rupees(p.amount)} <X s={0.8} c={C.sub}>for {p.period}</X></X>
-                  <X s={0.72} c={C.faint} numberOfLines={1}>{fmtFull(p.paid_at ?? p.created_at)} · {METHOD_LABEL[p.method]}{p.reference ? ` · ${p.reference}` : ''}</X>
-                </View>
-                <Pill t={p.status === 'paid' ? 'good' : 'warn'}>{p.status === 'paid' ? 'Paid' : p.status}</Pill>
-              </View>
-            ))}
-            {b.payments.length > 5 || b.months.length > 6 ? <Button size="sm" variant="ghost" label={showAll ? 'Show less' : 'Show everything'} onPress={() => setShowAll(!showAll)} /> : null}
+              <Facts items={[['Paid so far', rupees(b.summary.paid)], ['Outstanding', rupees(b.summary.outstanding)], ['Billed since', b.start_period ? (b.months[b.months.length - 1]?.label ?? b.start_period) : '--'], ['Plan', b.plan.name]]} />
+            </>
+          )}
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: u * 0.6 }}>
+            <Button variant="secondary" icon="list" label="Payment history" onPress={() => setDlg('history')} />
+            {canPlan ? <Button variant="ghost" icon="edit" label={b.plan ? 'Change plan' : 'Choose a plan'} onPress={() => setDlg('plan')} /> : null}
           </View>
         </View>
       )}
+
+      {b && chosen ? (
+        <Dialog
+          visible={dlg === 'pay'}
+          title={self ? 'Pay your fee' : 'Record a payment'}
+          confirmLabel={`${self ? 'Pay' : 'Record'} ${rupees(chosen.amount)}`}
+          loading={act.busy === 'pay'}
+          onConfirm={() => void pay()}
+          onCancel={() => setDlg(null)}
+        >
+          <View style={{ gap: u * 0.75 }}>
+            <View style={{ gap: u * 0.4 }}>
+              <X s={0.78} up c={C.faint}>Pay for</X>
+              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: u * 0.5 }}>
+                {options.map((o) => <RoundChip key={o.period} label={o.advance ? `${o.label} (advance)` : o.label} on={chosen.period === o.period} onPress={() => setPick(o.period)} />)}
+              </View>
+              <X s={2} w="x" num>{rupees(chosen.amount)}</X>
+            </View>
+            <View style={{ gap: u * 0.4 }}>
+              <X s={0.78} up c={C.faint}>{self ? 'Pay with' : 'Taken by'}</X>
+              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: u * 0.5 }}>
+                {methods.map((m) => <RoundChip key={m} label={METHOD_LABEL[m]} on={method === m} onPress={() => setMethod(m)} />)}
+              </View>
+            </View>
+            <X s={0.74} c={C.faint}>Demo payments: no real payment gateway is connected, so no money moves. The payment is recorded in XeroBurst straight away and appears in the Super Admin's payment log.</X>
+          </View>
+        </Dialog>
+      ) : null}
+
+      {b ? <HistoryDialog b={b} visible={dlg === 'history'} onClose={() => setDlg(null)} /> : null}
+
+      {b && canPlan ? (
+        <Dialog visible={dlg === 'plan'} title={b.plan ? 'Change fee plan' : 'Choose a fee plan'} cancelLabel="Close" onCancel={() => setDlg(null)}>
+          {plans.isLoading ? <LoadingBlock label="Loading plans" /> : !(plans.data?.items.length) ? <X s={0.85} c={C.warning}>No fee plans exist yet. The Super Admin adds them under Finance.</X> : (
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: u * 0.5 }}>
+              {plans.data.items.filter((p) => p.is_active).map((p) => (
+                <RoundChip key={p.id} label={`${p.name} ${rupees(p.amount)}`} on={b.plan?.id === p.id} onPress={() => { if (b.plan?.id !== p.id) void act.run('plan' + p.id, () => api.put(`/players/${playerId}/fee`, { plan_id: p.id }), `Plan set to ${p.name}.`).then((r) => { if (r.ok) setDlg(null); }); }} />
+              ))}
+            </View>
+          )}
+        </Dialog>
+      ) : null}
     </Card>
   );
 }

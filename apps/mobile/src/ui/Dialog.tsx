@@ -13,15 +13,17 @@ interface Props {
   cancelLabel?: string;
   danger?: boolean;
   loading?: boolean;
+  /** wider sheet for lists (default 480) */
+  maxWidth?: number;
   onConfirm?: () => void;
   onCancel: () => void;
 }
 
-export function Dialog({ visible, title, message, children, confirmLabel = 'Confirm', cancelLabel = 'Cancel', danger, loading, onConfirm, onCancel }: Props) {
+export function Dialog({ visible, title, message, children, confirmLabel = 'Confirm', cancelLabel = 'Cancel', danger, loading, maxWidth = 480, onConfirm, onCancel }: Props) {
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onCancel} supportedOrientations={['portrait', 'landscape']}>
       <View style={{ flex: 1, backgroundColor: C.scrim, alignItems: 'center', justifyContent: 'center', padding: 20 }}>
-        <View accessibilityViewIsModal style={{ width: '100%', maxWidth: 480, backgroundColor: C.surface, borderRadius: R.xl, borderWidth: 1.5, borderColor: C.borderStrong, padding: 22, gap: 14 }}>
+        <View accessibilityViewIsModal style={{ width: '100%', maxWidth, backgroundColor: C.surface, borderRadius: R.xl, borderWidth: 1.5, borderColor: C.borderStrong, padding: 22, gap: 14 }}>
           <Txt v="h1">{title}</Txt>
           {message ? <Txt v="body" color={C.sub}>{message}</Txt> : null}
           {children}

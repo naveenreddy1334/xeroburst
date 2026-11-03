@@ -5,7 +5,7 @@
 // pays for ("period", YYYY-MM). There is no payment gateway connected: a payment made in the app is recorded as paid at once and
 // the screen says so. Expenses are not recorded anywhere, so they stay "not configured".
 
-import type { BillingDTO, BillingMonth, FeePlanDTO, PaymentDTO, PaymentMethod } from '@nboard/shared';
+import type { BillingDTO, BillingMonth, FeePlanDTO, PaymentDTO, PaymentLogDTO, PaymentLogItem, PaymentMethod } from '@nboard/shared';
 import type { Ctx } from '../ctx.js';
 import { ApiError, notFound } from '../errors.js';
 import { newId } from '../db/seed.js';
@@ -133,7 +133,15 @@ export function recordPayment(
   const b = billingFor(ctx, playerId, true, nowMs);
   if (!b.plan || b.monthly_amount === null) throw new ApiError('VALIDATION', { fields: { _: 'This player has no fee plan yet.' } }, 'This player has no fee plan yet.');
   // Without a month, pay the oldest month that is not fully paid.
-  const target = body.period ? b.months.find((m) => m.period === body.period) : [...b.months].reverse().find((m) => m.paid < m.due);
+  let target = body.period ? b.months.find((m) => m.period === body.period) : [...b.months].reverse().find((m) => m.paid < m.due);
+  // A month that has not started yet can be paid in advance (up to 12 months ahead).
+  if (body.period && !target) {
+    const nowYm = ymOf(nowMs, ctx.settings().timezone);
+    if (/^\d{4}-\d{2}$/.test(body.period) && body.period > nowYm && body.period <= addMonths(nowYm, 12)) {
+      const paid = (ctx.db.prepare(`SELECT COALESCE(SUM(amount),0) n FROM payments WHERE player_id = ? AND period = ? AND status = 'paid'`).get(playerId, body.period) as { n: number }).n;
+      target = { period: body.period, label: monthLabel(body.period), due: b.monthly_amount, paid, status: paid > 0 ? 'partial' : 'due' };
+    }
+  }
   if (body.period && !target) throw new ApiError('VALIDATION', { fields: { period: 'That month is not billed.' } });
   if (!target) throw new ApiError('VALIDATION', { fields: { _: 'Everything is paid up.' } }, 'Everything is paid up.');
   const remaining = Math.max(0, target.due - target.paid);
@@ -200,4 +208,35 @@ export function paymentsSource(ctx: Ctx): FinanceSource {
       return { revenue, expenses, collected, outstanding: Math.max(0, billed - collected), currency: 'INR' };
     },
   };
+}
+
+// ---- the payment log (Super Admin) --------------------------------------------------------------------------------------
+/** Every payment, newest first, with the player, hub, branch and who took it. Filters narrow the list and the total together. */
+export function paymentLog(
+  ctx: Ctx,
+  q: { limit: number; offset: number; hub_id?: string; method?: PaymentMethod; period?: string; q?: string },
+): PaymentLogDTO {
+  const where: string[] = [];
+  const args: (string | number)[] = [];
+  if (q.hub_id) { where.push('u.hub_id = ?'); args.push(q.hub_id); }
+  if (q.method) { where.push('p.method = ?'); args.push(q.method); }
+  if (q.period) { where.push('p.period = ?'); args.push(q.period); }
+  if (q.q) {
+    where.push("(u.display_name LIKE ? ESCAPE '\\' OR u.login_id LIKE ? ESCAPE '\\')");
+    const like = `%${q.q.replace(/[\\%_]/g, (c) => `\\${c}`)}%`;
+    args.push(like, like);
+  }
+  const w = where.length ? `WHERE ${where.join(' AND ')}` : '';
+  const from = `FROM payments p JOIN users u ON u.id = p.player_id
+      LEFT JOIN hubs h ON h.id = u.hub_id LEFT JOIN branches b ON b.id = u.branch_id LEFT JOIN users r ON r.id = p.recorded_by ${w}`;
+  const sum = ctx.db.prepare(`SELECT COUNT(*) c, COALESCE(SUM(CASE WHEN p.status = 'paid' THEN p.amount ELSE 0 END),0) n ${from}`).get(...args) as { c: number; n: number };
+  const rows = ctx.db
+    .prepare(
+      `SELECT p.id, p.player_id, u.display_name player_name, u.login_id player_login, u.hub_id, h.name hub_name, u.branch_id, b.name branch_name,
+              p.period, p.amount, p.currency, p.method, p.status, p.reference, p.paid_at, p.created_at, r.display_name recorded_by_name, p.recorded_by
+         ${from} ORDER BY COALESCE(p.paid_at, p.created_at) DESC, p.id DESC LIMIT ? OFFSET ?`,
+    )
+    .all(...args, q.limit, q.offset) as (Omit<PaymentLogItem, 'recorded_by_self'> & { recorded_by: string | null })[];
+  const items: PaymentLogItem[] = rows.map(({ recorded_by, ...r }) => ({ ...r, recorded_by_self: recorded_by === r.player_id }));
+  return { items, total: sum.c, total_amount: sum.n, limit: q.limit, offset: q.offset };
 }
